@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Body Data PoC</title>
+  <style>
+    body { margin: 0; background: #111; color: #0f0; font-family: monospace; }
+    .container { display: flex; flex-direction: column; gap: 16px; padding: 16px; }
+    .main-content { display: flex; gap: 16px; }
+    .controls { background: #222; padding: 10px; border: 1px solid #333; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+    select, button { background: #000; color: #0f0; border: 1px solid #0f0; padding: 6px 12px; font-family: monospace; cursor: pointer; }
+    button:hover { background: #0f0; color: #000; }
+    button:disabled { border-color: #555; color: #555; cursor: not-allowed; background: #000; }
+    canvas { border: 1px solid #333; }
+    #log { width: 450px; height: 480px; overflow-y: auto; font-size: 12px; margin: 0; background: #000; padding: 10px; border: 1px solid #333;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="controls">
+      <label for="tracking-mode">Mode:</label>
+      <select id="tracking-mode">
+        <option value="both">Hands & Face (Both)</option>
+        <option value="hands">Hands Only</option>
+        <option value="face">Face Only</option>
+      </select>
+      
+      <button id="btn-record">Start Recording</button>
+      <button id="btn-download" disabled>Download JSON</button>
+
+      <span id="status">Waiting...</span>
+    </div>
+
+    <div class="main-content">
+      <div>
+        <video id="video" width="640" height="480" autoplay playsinline style="display:none"></video>
+        <canvas id="canvas" width="640" height="480"></canvas>
+      </div>
+      <pre id="log">Waiting for data...</pre>
+    </div>
+  </div>
+
+  <script type="module">
+    import { FilesetResolver, HandLandmarker, FaceLandmarker } from 
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const log = document.getElementById("log");
+    const modeSelect = document.getElementById("tracking-mode");
+    const statusText = document.getElementById("status");
+    
+    // UI for Export
+    const btnRecord = document.getElementById("btn-record");
+    const btnDownload = document.getElementById("btn-download");
+
+    statusText.textContent = "Loading models...";
+
+    const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+    );
+
+    const handLandmarker = await HandLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+        delegate: "GPU"
+      },
+      runningMode: "VIDEO",
+      numHands: 2
+    });
+
+    const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+        delegate: "GPU"
+      },
+      runningMode: "VIDEO",
+      numFaces: 1
+    });
+
+    statusText.textContent = "Starting camera...";
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    await video.play();
+    statusText.textContent = "Tracking active";
+
+    // Specific face points (468 = Left Iris, 473 = Right Iris, 1 = Nose tip, 199 = Chin, 61/291 = Mouth corners)
+    const keyFaceIndices = [1, 468, 473, 61, 291, 199];
+    
+    // Custom line connections for the face
+    const faceConnections = [[468, 1], [473, 1], [1, 61], [1, 291], [61, 199], [291, 199]];
+    
+    // Official hand bone connections
+    const handConnections = [
+      [0,1],[1,2],[2,3],[3,4], // Thumb
+      [0,5],[5,6],[6,7],[7,8], // Index
+      [5,9],[9,10],[10,11],[11,12], // Middle
+      [9,13],[13,14],[14,15],[15,16], // Ring
+      [13,17],[17,18],[18,19],[19,20], // Pinky
+      [0,17] // Palm base
+    ];
+
+    let lastTime = -1;
+    let frameCounter = 0;
+    
+    // Variables for data recording
+    let isRecording = false;
+    let recordedSession = [];
+
+    // Recording logic
+    btnRecord.addEventListener("click", () => {
+      if (!isRecording) {
+        isRecording = true;
+        recordedSession = []; // Clear array
+        btnRecord.textContent = "Stop Recording...";
+        btnRecord.style.background = "#f00"; // Red indicates recording
+        btnDownload.disabled = true;
+      } else {
+        isRecording = false;
+        btnRecord.textContent = "Start Recording";
+        btnRecord.style.background = "#000";
+        if (recordedSession.length > 0) {
+          btnDownload.disabled = false; // Enable download
+        }
+      }
+    });
+
+    // Download logic
+    btnDownload.addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(recordedSession, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      // Filename with timestamp
+      a.download = `body_data_export_${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // Main Loop
+    function detect() {
+      if (video.currentTime !== lastTime) {
+        lastTime = video.currentTime;
+        const currentMode = modeSelect.value;
+        const now = performance.now();
+
+        // Clear canvas and draw video
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, 640, 480);
+
+        let currentFrameData = {
+          timestamp: Date.now()
+        };
+
+        // --- HAND TRACKING ---
+        if (currentMode === "hands" || currentMode === "both") {
+          const handResults = handLandmarker.detectForVideo(video, now);
+          
+          if (handResults.landmarks.length > 0) {
+            handResults.landmarks.forEach((hand, handIndex) => {
+              // Get handedness ("Left" or "Right")
+              const handednessData = handResults.handednesses[handIndex];
+              let category = "Unknown";
+              if (handednessData && handednessData.length > 0) {
+                category = handednessData[0].categoryName || handednessData[0].displayName || "Unknown";
+              } 
+              if (category === "Left") {
+                category = "Right";
+              } else if (category === "Right") {
+                category = "Left";
+              } else if (category === "left") { 
+                category = "Right";
+              } else if (category === "right") {
+                category = "Left";
+              }
+              const prefix = category === "Unknown" ? "?" : category.charAt(0).toUpperCase();
+              const handKey = `Hand ${handIndex} (${category})`;              
+              const handPoints = [];
+              
+              // 1. Draw connections (Bones)
+              ctx.strokeStyle = "#00ff00";
+              ctx.lineWidth = 2;
+              handConnections.forEach(([start, end]) => {
+                ctx.beginPath();
+                ctx.moveTo(hand[start].x * 640, hand[start].y * 480);
+                ctx.lineTo(hand[end].x * 640, hand[end].y * 480);
+                ctx.stroke();
+              });
+
+              // 2. Draw points and numbers
+              hand.forEach((pt, index) => {
+                const px = pt.x * 640;
+                const py = pt.y * 480;
+
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
+                ctx.fillStyle = "#00ff00";
+                ctx.fill();
+
+                ctx.font = "12px Arial";
+                ctx.fillStyle = "#ffffff";
+                // Draw L0, R0, etc.
+                ctx.fillText(`${prefix}${index}`, px + 6, py - 6); 
+
+                // ADDED z-axis back here!
+                handPoints.push({ 
+                  id: index, 
+                  x: pt.x.toFixed(3), 
+                  y: pt.y.toFixed(3), 
+                  z: pt.z.toFixed(3) 
+                });
+              });
+              
+              currentFrameData[handKey] = handPoints;
+            });
+          }
+        }
+
+        // --- FACE TRACKING ---
+        if (currentMode === "face" || currentMode === "both") {
+          const faceResults = faceLandmarker.detectForVideo(video, now);
+          
+          if (faceResults.faceLandmarks.length > 0) {
+            faceResults.faceLandmarks.forEach((face) => {
+              const facePoints = [];
+              
+              // 1. Draw custom connections
+              ctx.strokeStyle = "#0088ff";
+              ctx.lineWidth = 2;
+              faceConnections.forEach(([startID, endID]) => {
+                const startPt = face[startID];
+                const endPt = face[endID];
+                if(startPt && endPt) {
+                  ctx.beginPath();
+                  ctx.moveTo(startPt.x * 640, startPt.y * 480);
+                  ctx.lineTo(endPt.x * 640, endPt.y * 480);
+                  ctx.stroke();
+                }
+              });
+
+              // 2. Draw points
+              keyFaceIndices.forEach(index => {
+                const pt = face[index];
+                const px = pt.x * 640;
+                const py = pt.y * 480;
+
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
+                ctx.fillStyle = "#0088ff"; 
+                ctx.fill();
+
+                ctx.font = "12px Arial";
+                ctx.fillStyle = "#ffffff";
+                ctx.fillText(`F${index}`, px + 6, py - 6); 
+
+                // ADDED z-axis back here!
+                facePoints.push({ 
+                  id: index, 
+                  x: pt.x.toFixed(3), 
+                  y: pt.y.toFixed(3), 
+                  z: pt.z.toFixed(3) 
+                });
+              });
+              
+              currentFrameData["Face"] = facePoints;
+            });
+          }
+        }
+
+        // Record data if active
+        if (isRecording) {
+          recordedSession.push(currentFrameData);
+        }
+
+        // Throttle DOM updates (Every 5 frames)
+        frameCounter++;
+        if (frameCounter % 5 === 0) {
+           if (Object.keys(currentFrameData).length > 1) { 
+             log.textContent = JSON.stringify(currentFrameData, null, 2);
+           } else {
+             log.textContent = "No detection in current mode...";
+           }
+        }
+      }
+      requestAnimationFrame(detect);
+    }
+    
+    detect();
+  </script>
+</body>
+</html>
