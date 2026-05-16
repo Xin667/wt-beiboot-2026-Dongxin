@@ -22,7 +22,7 @@ Face Landmarks: Für diesen PoC werden spezifische Key-Points extrahiert (Augen,
 
 **Rauschen:**
 - Bei ruhig gehaltener Hand fluktuieren die Koordinatenwerte leicht weiter.  
-  Die Schwankungen sind klein, aber messbar – für präzise Gesten-Erkennung. Wäre ein Smoothing-Filter (z.B. gleitender Durchschnitt) empfehlenswert?
+  Die Schwankungen sind klein, aber messbar – für präzise Gesten-Erkennung. Ein Smoothing-Filter (z.B. gleitender Durchschnitt) wäre empfehlenswert.
 
 **Verdeckung:**
 - Werden Landmarks verdeckt (z.B. Daumen hinter der Hand), verschwinden die Punkte nicht.
@@ -32,6 +32,15 @@ Face Landmarks: Für diesen PoC werden spezifische Key-Points extrahiert (Augen,
 
 - Es läuft flüssig im Browser ohne spürbaren Lag (Edge, WebGL 2.0 / GPU-Delegate)
 - WebGL-Warnungen aber keine Fehler in der Konsole
+
+## Schwierigkeiten & Lernmomente
+
+1. Eine Änderung der Attributnamen infolge eines MediaPipe-Updates führte zu fehlenden Daten und löste dadurch einen Absturz beim Canvas-Rendering aus. 
+  Lösung/Debugging: Implementierung einer Fehlertoleranzbehandlung (`categoryName || "Unknown"`).
+2. Hardwarebeschleunigung (CPU vs. GPU Delegate). Zu Beginn liefen beide Modelle (Hand & Face) über den CPU-Delegate. Dies führte bei der gleichzeitigen Auswertung vieler Landmarks schnell zu spürbaren Verzögerungen (Lag).
+  Lösung: Auslagerung der Berechnungen auf die Grafikkarte (via GPU-Delegate)
+3. Umgang mit der Kamera-Spiegelung. Frontkameras spiegeln das Videobild standardmäßig.
+  Lösung: Das Tracking-Ergebnis wurde softwareseitig invertiert. Ein Filter tauscht die Labels "Left" und "Right" unmittelbar nach der Erkennung aus, sodass visuelle Darstellung und Daten-Export wieder synchron sind.
 
 ## Fazit
 
