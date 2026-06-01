@@ -1,13 +1,36 @@
-# Web Technologien // begleitendes Projekt Sommersemester 2026
-Zum Modul Web Technologien gibt es ein begleitendes Projekt. Im Rahmen dieses Projekts werden wir von Veranstaltung zu Veranstaltung ein Projekt sukzessive weiter entwickeln und uns im Rahmen der Veranstaltung den Fortschritt anschauen, Code Reviews machen und Entwicklungsschritte vorstellen und diskutieren.
+# Web Technologies // Body Data PoC
 
-Als organisatorischen Rahmen für das Projekt nutzen wir GitHub Classroom. Inhaltlich befassen wir uns mit einer  Client-Server Anwendung mit deren Hilfe IPTC Metadaten von Bildern schnell und einfach gepflegt werden können.
+Begleitprojekt zum Modul Web Technologies. Das Projekt wird von Issue zu Issue weiterentwickelt, wobei Fortschritte durch Code Reviews und Präsentationen begleitet werden.
 
-Dokumentieren Sie in diesem Beibootprojekt Ihre Entscheidungen gewissenhaft unter Zuhilfenahme von [Architectual Decision Records](https://adr.github.io) (ADR).
+Ziel ist die browserbasierte Erfassung und Verarbeitung von Körperdaten (Hand- und Gesichtsbewegungen) über die Kamera – sowie die Steuerung von Interaktionen durch Gestenerkennung.
 
-Hier ein paar ADR Beispiele aus dem letzten Semestern:
-- https://github.com/mi-classroom/mi-web-technologien-beiboot-ss2022-Moosgloeckchen/tree/main/docs/decisions
-- https://github.com/mi-classroom/mi-web-technologien-beiboot-ss2022-mweiershaeuser/tree/main/adr
-- https://github.com/mi-classroom/mi-web-technologien-beiboot-ss2022-twobiers/tree/main/adr
+## Team
+Author: [Dongxin Wang](https://github.com/Xin667)
+Reviewer: [Christian Noss](https://github.com/cnoss)
 
-Halten Sie die Anwendung, gerade in der Anfangsphase möglichst einfach, schlank und leichtgewichtig (KISS).
+## Quick Start
+
+Keine Installation notwendig. Die Anwendung läuft direkt im Browser.
+
+1. Repository klonen
+2. In `index.html` mit z.B VS Code "Go Live" starten
+3. Kamerazugriff von der Browser erlauben
+
+> Ein lokaler Webserver ist notwendig, da MediaPipe die Modelldateien per HTTP lädt. Das direkte Öffnen der Datei im Browser funktioniert nicht.
+
+## Decision Records
+
+Die Architekturentscheidungen sind nach Issue dokumentiert:
+
+* [Issue 1 – ML-Library](./docs/issue1/0001-mediapipe-as-ml-library.md)
+* [Issue 2 – Gestenauswahl](./docs/issue2/0002-gestenauswahl.md)
+* [Issue 2 – Algorithmus & Stabilität](./docs/issue2/0003-algorithmus-und-stabilitaet.md)
+
+## Process Documentation
+
+* [Time Tracking Issue 1](./docs/issue1/time-tracking.md)
+* [Time Tracking Issue 2](./docs/issue2/time-tracking.md)
+
+## Notes
+
+This implementation is a prototype.
