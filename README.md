@@ -6,6 +6,7 @@ Ziel ist die browserbasierte Erfassung und Verarbeitung von Körperdaten (Hand- 
 
 ## Team
 Author: [Dongxin Wang](https://github.com/Xin667)
+
 Reviewer: [Christian Noss](https://github.com/cnoss)
 
 ## Quick Start
