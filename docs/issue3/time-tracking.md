@@ -1,23 +1,21 @@
-# Zeiterfassung – Issue #3
+# Time Tracking – Issue 3
 
-| Datum | Dauer | Tätigkeit |
-|---|---|---|
-| TT.MM. | Xh | Bestehende Gesture-Libraries recherchiert (Fingerpose, ZingTouch, Hammer.js) |
-| TT.MM. | Xh | Library-Architektur entworfen, ADR 0004 geschrieben |
-| TT.MM. | Xh | BaseGesture, GestureLibrary, utils/landmarks.js implementiert |
-| TT.MM. | Xh | Issue-#2-Gesten in Library-Struktur überführt (ThumbsUp, Pinch, OpenHandStable, TwoHandZoom) |
-| TT.MM. | Xh | SwipeGesture implementiert und getestet |
-| TT.MM. | Xh | PeaceGesture implementiert und getestet |
-| TT.MM. | Xh | Demo-Anwendung refactored (detectGestures → lib.update) |
-| TT.MM. | Xh | API-Dokumentation und ADR 0005 geschrieben |
-
-**Gesamt:** XX Stunden
+| Aufgabe | Zeit |
+| :--- | :--- |
+| Bestehende Gesture Libraries recherchieren (Fingerpose, ZingTouch, Hammer.js) | 1.0h |
+| Library-Architektur entwerfen (Registry-Pattern) + ADR 0004 | 1.5h |
+| BaseGesture, GestureLibrary, Utilities implementieren | 2.0h |
+| Issue-#2-Gesten in Library-Struktur überführen | 1.5h |
+| Neue Gesten implementieren (Peace, ThumbsDown) | 1.0h |
+| Demo-Anwendung refactored (detectGestures → lib.update) | 1.5h |
+| Testen & Stabilisierung (Prioritätslogik, holdMs, False Positives) | 2.0h |
+| Dokumentation (API-Doku, ADR 0005) | 1.5h |
+| **Gesamt** | **12.0h** |
 
 ## Reflexion
 
-_(Nach Abschluss ausfüllen)_
+Die meiste Zeit ging in die Stabilisierung der Erkennung – nicht in die Library-Architektur selbst. Das Registry-Pattern war relativ schnell entworfen, aber die Wechselwirkungen zwischen den Gesten (z.B. ThumbsUp löst Pinch aus, Swipe feuert bei jeder Handbewegung) erforderten eine Prioritätslogik (exclusive-Modus), die im ursprünglichen Issue-#2-Code implizit durch die if/else-if-Kette vorhanden war, aber bei der Zerlegung in einzelne Klassen verloren ging.
 
-- Was hat länger gedauert als erwartet?
-- Was war überraschend einfach?
-- Was würde ich beim nächsten Mal anders machen?
-- Welche Geste war am schwierigsten zu stabilisieren?
+Swipe wurde implementiert und wieder verworfen – die False-Positive-Rate war zu hoch. Die Erkenntnis: bewegungsbasierte Gesten (Frame-Deltas) sind fundamental schwieriger zu stabilisieren als statische Posen (Finger-Koordinatenvergleiche).
+
+Beim nächsten Mal würde ich die Prioritätslogik von Anfang an in die Architektur einplanen, statt sie nachträglich einzubauen.
