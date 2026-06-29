@@ -1,6 +1,6 @@
 # ADR 0005: Auswahl der neuen Gesten für Issue #3
 
-**Date:** 2026-07-XX  
+**Date:** 2026-06-29  
 **Author:** Dongxin Wang  
 **Status:** Accepted
 

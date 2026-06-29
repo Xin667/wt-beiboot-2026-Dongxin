@@ -1,6 +1,6 @@
 # ADR 0004: Library-Architektur – Registry-Pattern
 
-**Date:** 2026-07-XX  
+**Date:** 2026-06-29  
 **Author:** Dongxin Wang  
 **Status:** Accepted
 
