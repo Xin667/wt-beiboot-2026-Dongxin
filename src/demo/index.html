@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Body Data PoC – Issue #3 (Library)</title>
+  <style>
+    body { margin: 0; background: #111; color: #0f0; font-family: monospace; }
+    .container { display: flex; flex-direction: column; gap: 16px; padding: 16px; }
+    .main-content { display: flex; gap: 16px; position: relative; }
+    .controls { background: #222; padding: 10px; border: 1px solid #333; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+    select, button { background: #000; color: #0f0; border: 1px solid #0f0; padding: 6px 12px; font-family: monospace; cursor: pointer; }
+    button:hover { background: #0f0; color: #000; }
+    button:disabled { border-color: #555; color: #555; cursor: not-allowed; background: #000; }
+    canvas { border: 1px solid #333; }
+
+    /* Log-Bereich: jetzt zweigeteilt (Rohdaten + Gesten-Events) */
+    .sidebar { display: flex; flex-direction: column; gap: 10px; width: 450px; }
+    #log { height: 240px; overflow-y: auto; font-size: 12px; margin: 0; background: #000; padding: 10px; border: 1px solid #333; }
+    #event-log { height: 220px; overflow-y: auto; font-size: 12px; margin: 0; background: #000; padding: 10px; border: 1px solid #333; }
+    .section-label { color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Gesten-Feedback-Overlay (wie Issue #2) */
+    #gesture-output {
+      position: absolute;
+      top: 20px;
+      left: 320px;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 20px;
+      font-weight: bold;
+      display: none;
+      z-index: 10;
+      border: 2px solid #00ff00;
+      pointer-events: none;
+    }
+
+    /* Registrierte Gesten (unten) */
+    .registered-gestures {
+      background: #222; padding: 10px; border: 1px solid #333;
+      font-size: 12px; display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .gesture-chip {
+      background: #000; border: 1px solid #333; padding: 4px 8px; border-radius: 3px;
+    }
+    .gesture-chip.active { border-color: #0f0; color: #0f0; }
+    .gesture-chip .hands-badge {
+      font-size: 10px; color: #666; margin-left: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="controls">
+      <label for="tracking-mode">Mode:</label>
+      <select id="tracking-mode">
+        <option value="both">Hands & Face (Both)</option>
+        <option value="hands">Hands Only</option>
+        <option value="face">Face Only</option>
+      </select>
+      <button id="btn-record">Start Recording</button>
+      <button id="btn-download" disabled>Download JSON</button>
+      <span id="status">Waiting...</span>
+    </div>
+
+    <div class="main-content">
+      <div>
+        <video id="video" width="640" height="480" autoplay playsinline style="display:none"></video>
+        <canvas id="canvas" width="640" height="480"></canvas>
+        <div id="gesture-output">Keine Geste</div>
+      </div>
+
+      <div class="sidebar">
+        <span class="section-label">Rohdaten (alle 5 Frames)</span>
+        <pre id="log">Waiting for data...</pre>
+        <span class="section-label">Gesten-Events (Library)</span>
+        <pre id="event-log"></pre>
+      </div>
+    </div>
+
+    <div class="registered-gestures" id="gesture-chips"></div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
