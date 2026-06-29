@@ -10,13 +10,28 @@ import { LM, isFingerCurled } from '../utils/landmarks.js';
  *   - hand[4].y < hand[5].y  → Daumenspitze über Zeigefingerbasis
  *   - hand[4].y < hand[3].y  → Daumenspitze über Daumen-IP (Daumen gestreckt)
  *   - Zeige-, Mittel-, Ring-, kleiner Finger jeweils eingeklappt (tip.y > mcp.y)
+ *
+ * Ergänzung Issue #3: holdMs-Stabilisierung hinzugefügt, um kurzes Aufblitzen
+ * bei Übergangsbewegungen zu unterdrücken.
  */
 export class ThumbsUpGesture extends BaseGesture {
+
+  /**
+   * @param {object} [options]
+   * @param {number} [options.holdMs=250] – Mindest-Haltedauer
+   */
+  constructor(options = {}) {
+    super();
+    this._holdMs = options.holdMs ?? 250;
+    this._activeStart = null;
+  }
 
   get name() { return 'thumbs-up'; }
   get description() { return 'Daumen hoch – Start-Geste im Nahbereich.'; }
 
-  detect(hand, _meta) {
+  detect(hand, meta = {}) {
+    const now = meta.timestamp ?? performance.now();
+
     // Daumen gestreckt und höher als Zeigefingerbasis
     const thumbUp = hand[LM.THUMB_TIP].y < hand[LM.INDEX_MCP].y
                   && hand[LM.THUMB_TIP].y < hand[LM.THUMB_IP].y;
@@ -28,11 +43,23 @@ export class ThumbsUpGesture extends BaseGesture {
       isFingerCurled(hand, LM.RING_TIP,   LM.RING_MCP)   &&
       isFingerCurled(hand, LM.PINKY_TIP,  LM.PINKY_MCP);
 
-    const detected = thumbUp && fingersCurled;
+    const rawDetected = thumbUp && fingersCurled;
 
-    return {
-      detected,
-      confidence: detected ? 0.9 : 0,
-    };
+    if (rawDetected) {
+      if (this._activeStart === null) this._activeStart = now;
+      const held = now - this._activeStart;
+      return {
+        detected: held >= this._holdMs,
+        confidence: held >= this._holdMs ? 0.9 : 0.3,
+        data: { heldMs: held },
+      };
+    }
+
+    this._activeStart = null;
+    return { detected: false, confidence: 0 };
+  }
+
+  reset() {
+    this._activeStart = null;
   }
 }

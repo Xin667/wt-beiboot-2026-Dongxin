@@ -14,13 +14,13 @@ import {
   SwipeGesture,
 } from './lib/index.js';
 
-// 1. Library instanziieren
-const lib = new GestureLibrary();
+// 1. Library instanziieren (exclusive: Registrierungsreihenfolge = Priorität)
+const lib = new GestureLibrary({ exclusive: true });
 
-// 2. Gesten registrieren (mit optionalen Parametern)
-lib.register(new ThumbsUpGesture());
-lib.register(new PinchGesture({ threshold: 0.04 }));
-lib.register(new SwipeGesture({ threshold: 0.12, cooldownMs: 600 }));
+// 2. Gesten registrieren – Reihenfolge bestimmt Priorität!
+lib.register(new PinchGesture({ threshold: 0.04 }));   // höchste Priorität
+lib.register(new ThumbsUpGesture({ holdMs: 250 }));
+lib.register(new SwipeGesture());
 
 // 3. Auf erkannte Gesten reagieren
 lib.onGesture((name, result) => {
@@ -41,17 +41,23 @@ function onResults(handResults) {
 
 ## GestureLibrary
 
-### `new GestureLibrary()`
+### `new GestureLibrary(options?)`
 
 Erstellt eine neue Library-Instanz ohne registrierte Gesten.
 
+| Option | Default | Beschreibung |
+|---|---|---|
+| `exclusive` | `true` | Wenn true: Pro Frame wird nur die ERSTE erkannte Geste gemeldet. Registrierungsreihenfolge = Priorität (wie die if/else-if-Kette aus Issue #2). Wenn false: alle Gesten werden unabhängig ausgewertet. |
+
+Zusätzlich wird automatisch nach Handanzahl getrennt: Bei 1 Hand werden nur Einhand-Gesten geprüft, bei 2 Händen nur Zweihand-Gesten.
+
 ### `lib.register(gesture)` → `GestureLibrary`
 
-Registriert eine Geste. Chaining möglich.
+Registriert eine Geste. Chaining möglich. **Im exclusive-Modus bestimmt die Reihenfolge die Priorität** – zuerst registriert = höchste Priorität.
 
 ```js
-lib.register(new ThumbsUpGesture())
-   .register(new PinchGesture());
+lib.register(new PinchGesture())      // Priorität 1
+   .register(new ThumbsUpGesture());  // Priorität 2
 ```
 
 ### `lib.unregister(name)` → `boolean`
@@ -128,8 +134,12 @@ Entfernt alle Gesten und Listener.
 Daumen hoch – Start-Geste im Nahbereich.
 
 ```js
-new ThumbsUpGesture()
+new ThumbsUpGesture({ holdMs: 250 })
 ```
+
+| Option | Default | Beschreibung |
+|---|---|---|
+| `holdMs` | `250` | Mindest-Haltedauer – unterdrückt kurzes Aufblitzen bei Übergangsbewegungen |
 
 | Erkennung | Originalwert aus Issue #2 |
 |---|---|
@@ -137,7 +147,7 @@ new ThumbsUpGesture()
 | Daumenspitze über Daumen-IP | `hand[4].y < hand[3].y` |
 | Alle anderen Finger eingeklappt | `tip.y > mcp.y` |
 
-Keine konfigurierbaren Parameter (Schwellenwerte sind absolute Koordinatenvergleiche).
+**data:** `{ heldMs: number }`
 
 ### PinchGesture (Issue #2)
 
@@ -173,13 +183,14 @@ new OpenHandStableGesture({ holdMs: 1500, maxMovement: 0.015 })
 Beide Hände bewegen sich aufeinander zu – Zoom-out im Fernbereich.
 
 ```js
-new TwoHandZoomGesture({ minDelta: 0.01, minDistance: 0.2 })
+new TwoHandZoomGesture({ minDelta: 0.01, minDistance: 0.2, holdMs: 400 })
 ```
 
 | Option | Default | Beschreibung |
 |---|---|---|
 | `minDelta` | `0.01` | Mindest-Annäherung pro Frame (aus ADR 0003) |
 | `minDistance` | `0.2` | Mindestabstand beider Hände (MediaPipe-Bug-Workaround) |
+| `holdMs` | `400` | Geste bleibt nach letztem positiven Delta aktiv – überbrückt einzelne Rausch-Frames |
 
 **data:** `{ distance: number, delta: number }`
 
@@ -190,16 +201,19 @@ new TwoHandZoomGesture({ minDelta: 0.01, minDistance: 0.2 })
 Wischbewegung – Navigation (zurück / vor / oben / unten).
 
 ```js
-new SwipeGesture({ threshold: 0.12, windowMs: 300, cooldownMs: 600 })
+new SwipeGesture({ threshold: 0.12, windowMs: 300, displayMs: 500, cooldownMs: 600 })
 ```
 
 | Option | Default | Beschreibung |
 |---|---|---|
 | `threshold` | `0.12` | Mindest-Verschiebung auf einer Achse |
 | `windowMs` | `300` | Zeitfenster für die Bewegungsmessung |
-| `cooldownMs` | `600` | Pause nach erkanntem Swipe |
+| `displayMs` | `500` | Wie lange die Geste nach Erkennung als „aktiv" gemeldet wird (für sichtbares UI-Feedback) |
+| `cooldownMs` | `600` | Pause NACH displayMs bis zur nächsten möglichen Erkennung |
 
 **data:** `{ direction: 'left'|'right'|'up'|'down', dx: number, dy: number }`
+
+**Hinweis:** Swipe ist eine Ereignis-Geste, keine Pose. Sie wird einmal ausgelöst, bleibt `displayMs` lang aktiv (damit die UI sie anzeigen kann), und geht dann in die Cooldown-Phase.
 
 ### PeaceGesture (Issue #3 – neu)
 

@@ -16,7 +16,8 @@ import { LM, distance2D } from '../utils/landmarks.js';
  *   2. Netto-Verschiebung über ein Zeitfenster (windowMs) berechnen
  *   3. Wenn |delta.x| oder |delta.y| > threshold → Swipe erkannt
  *   4. Dominante Achse bestimmt die Richtung (left/right/up/down)
- *   5. Nach erkanntem Swipe: Cooldown-Phase (kein erneuter Swipe)
+ *   5. Nach Erkennung: Geste bleibt displayMs lang „aktiv" (für UI-Feedback),
+ *      danach beginnt die cooldownMs-Phase (kein erneuter Swipe)
  *
  * Bekannte Einschränkung:
  *   - Sehr langsame Wischbewegungen bleiben unter dem Schwellenwert
@@ -29,17 +30,22 @@ export class SwipeGesture extends BaseGesture {
    * @param {object} [options]
    * @param {number} [options.threshold=0.12] – Mindest-Delta auf einer Achse
    * @param {number} [options.windowMs=300] – Zeitfenster für die Messung
-   * @param {number} [options.cooldownMs=600] – Pause nach erkanntem Swipe
+   * @param {number} [options.displayMs=500] – Wie lange die Geste nach Erkennung
+   *        als „aktiv" gemeldet wird (für sichtbares UI-Feedback)
+   * @param {number} [options.cooldownMs=600] – Pause NACH displayMs bis zur
+   *        nächsten möglichen Erkennung
    */
   constructor(options = {}) {
     super();
     this._threshold  = options.threshold  ?? 0.12;
     this._windowMs   = options.windowMs   ?? 300;
+    this._displayMs  = options.displayMs  ?? 500;
     this._cooldownMs = options.cooldownMs ?? 600;
 
     /** @type {Array<{x: number, y: number, t: number}>} */
     this._history = [];
     this._lastSwipeTime = 0;
+    this._lastSwipeData = null;   // Gespeichertes Ergebnis für die Display-Phase
   }
 
   get name() { return 'swipe'; }
@@ -47,25 +53,37 @@ export class SwipeGesture extends BaseGesture {
 
   detect(hand, meta = {}) {
     const now = meta.timestamp ?? performance.now();
-    const wrist = hand[LM.WRIST];
+    const elapsed = now - this._lastSwipeTime;
 
-    // Position speichern
-    this._history.push({ x: wrist.x, y: wrist.y, t: now });
+    // ── Phase 1: Display – Geste wurde gerade erkannt, bleibt sichtbar ──
+    if (this._lastSwipeData && elapsed < this._displayMs) {
+      // Keine History sammeln während Display-Phase
+      return {
+        detected: true,
+        confidence: this._lastSwipeData.confidence,
+        data: this._lastSwipeData.data,
+      };
+    }
 
-    // History begrenzen (max. 30 Einträge)
-    if (this._history.length > 30) this._history.shift();
-
-    // Cooldown prüfen
-    if (now - this._lastSwipeTime < this._cooldownMs) {
+    // ── Phase 2: Cooldown – nach Display, vor nächster Erkennung ──
+    if (this._lastSwipeData && elapsed < this._displayMs + this._cooldownMs) {
+      this._lastSwipeData = null;  // Display-Daten aufräumen
       return { detected: false, confidence: 0, data: { reason: 'cooldown' } };
     }
 
-    // Brauchen mindestens 2 Einträge
+    // Display-Daten aufräumen falls noch vorhanden
+    this._lastSwipeData = null;
+
+    // ── Phase 3: Normale Erkennung ──
+    const wrist = hand[LM.WRIST];
+
+    this._history.push({ x: wrist.x, y: wrist.y, t: now });
+    if (this._history.length > 30) this._history.shift();
+
     if (this._history.length < 2) {
       return { detected: false, confidence: 0 };
     }
 
-    // Ältesten Eintrag innerhalb des Zeitfensters finden
     const windowStart = now - this._windowMs;
     const startEntry = this._findClosest(windowStart);
     if (!startEntry) {
@@ -81,29 +99,31 @@ export class SwipeGesture extends BaseGesture {
       return { detected: false, confidence: 0, data: { dx, dy } };
     }
 
-    // Dominante Achse → Richtung
+    // Richtung bestimmen
     let direction;
     if (absDx > absDy) {
-      // MediaPipe: x wächst nach rechts im Bild.
-      // Bei gespiegeltem Video: x wächst nach links aus Nutzersicht.
-      // Richtung hier aus Kameraperspektive (Spiegelung ist Sache der Demo-App).
       direction = dx > 0 ? 'right' : 'left';
     } else {
       direction = dy > 0 ? 'down' : 'up';
     }
 
-    // Swipe erkannt → Cooldown starten, History leeren
+    // Swipe erkannt → Display-Phase starten
     this._lastSwipeTime = now;
     this._history = [];
 
+    const confidence = Math.min(1, Math.max(absDx, absDy) / this._threshold);
+    this._lastSwipeData = {
+      confidence,
+      data: { direction, dx, dy },
+    };
+
     return {
       detected: true,
-      confidence: Math.min(1, Math.max(absDx, absDy) / this._threshold),
+      confidence,
       data: { direction, dx, dy },
     };
   }
 
-  /** Findet den History-Eintrag am nächsten zum Ziel-Timestamp. */
   _findClosest(targetTime) {
     let closest = null;
     let minDiff = Infinity;
@@ -116,6 +136,7 @@ export class SwipeGesture extends BaseGesture {
 
   reset() {
     this._history = [];
-    this._lastSwipeTime = 0;
+    // Display-Phase bei reset NICHT abbrechen, damit das UI-Feedback
+    // auch bei exclusive-Modus sichtbar bleibt
   }
 }

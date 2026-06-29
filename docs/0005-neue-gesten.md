@@ -34,8 +34,10 @@ Implementierungsdetails:
 - History: Speichert die letzten 30 Handgelenkpositionen (LM 0) mit Timestamp
 - Zeitfenster: 300ms – Verschiebung = aktuelle Position minus Position vor 300ms
 - Threshold: 0.12 (normalisiert) – bei normaler Armlänge ca. 12% der Bildbreite
-- Cooldown: 600ms nach erkanntem Swipe, verhindert Doppelauslösung
 - Richtung: dominante Achse gewinnt (|dx| > |dy| → horizontal)
+- Display-Phase: 500ms – nach Erkennung bleibt die Geste für die UI sichtbar aktiv
+- Cooldown: 600ms NACH der Display-Phase bis zur nächsten möglichen Erkennung
+- Swipe ist eine Ereignis-Geste (einmalig ausgelöst), keine Pose (durchgehend gehalten)
 
 ### Peace (System aufwecken)
 **Begründung:** Die bisherigen Gesten prüfen entweder „alle Finger eingeklappt" (ThumbsUp), „alle Finger gestreckt" (OpenHandStable), oder zwei spezifische Finger gegeneinander (Pinch). Peace bringt eine neue Kombination: **genau zwei bestimmte Finger gestreckt, der Rest eingeklappt**. Das testet die Fähigkeit der Library, differenzierte Fingerzustandsprüfungen auszudrücken. Die Geste ist laut Mapping-Tabelle als „bewusste Geste" mit hoher Reliabilität eingestuft.
@@ -43,7 +45,7 @@ Implementierungsdetails:
 Implementierungsdetails:
 - Zeige- und Mittelfinger gestreckt (tip.y < mcp.y)
 - Ring- und kleiner Finger eingeklappt (tip.y > mcp.y)
-- Daumen nicht deutlich gestreckt (lockere Prüfung, da Daumen bei V-Geste oft neutral)
+- Daumen wird bewusst NICHT geprüft: Bei der V-Geste variiert die Daumenposition stark (eingeklappt, abgespreizt, neutral). Die Kombination Index+Middle gestreckt + Ring+Pinky eingeklappt ist bereits ausreichend eindeutig.
 - Haltezeit: 400ms Stabilisierung
 
 ### Nicht gewählt

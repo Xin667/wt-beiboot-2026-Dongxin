@@ -48,11 +48,12 @@ export class PeaceGesture extends BaseGesture {
     const ringDown  = isFingerCurled(hand, LM.RING_TIP,  LM.RING_MCP);
     const pinkyDown = isFingerCurled(hand, LM.PINKY_TIP, LM.PINKY_MCP);
 
-    // Daumen: nicht gestreckt (Tip nicht deutlich über MCP)
-    // Lockerer als bei ThumbsUp, da der Daumen bei Peace oft neutral liegt
-    const thumbNotUp = hand[LM.THUMB_TIP].y >= hand[LM.THUMB_MCP].y - 0.02;
+    // Daumen wird NICHT geprüft: Bei der V-Geste variiert die Daumenposition
+    // stark (eingeklappt über Ringfinger, seitlich abgespreizt, etc.).
+    // Die Kombination Index+Middle gestreckt + Ring+Pinky eingeklappt ist
+    // bereits ausreichend eindeutig.
 
-    const rawDetected = indexUp && middleUp && ringDown && pinkyDown && thumbNotUp;
+    const rawDetected = indexUp && middleUp && ringDown && pinkyDown;
 
     // Stabilisierung
     if (rawDetected) {

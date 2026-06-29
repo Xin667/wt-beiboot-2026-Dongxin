@@ -42,10 +42,12 @@ Jede Geste ist eine eigenständige Klasse, die von `BaseGesture` erbt. Eine `Ges
 - `GestureLibrary` kennt keine konkreten Gesten, arbeitet nur mit `BaseGesture`-Schnittstelle
 - Schwellenwerte sind jetzt per Konstruktor-Optionen einstellbar: `new PinchGesture({ threshold: 0.04 })`
 - Einhand/Zweihand-Routing ist in der Library gekapselt, Gesten müssen sich nicht darum kümmern
+- `exclusive`-Modus (default) bildet die Prioritätsreihenfolge aus Issue #2 (ADR 0003: Pinch → ThumbsUp → Hand stabil) ab: Registrierungsreihenfolge = Priorität, erste erkannte Geste gewinnt. Kann für parallele Erkennung auf `false` gesetzt werden.
 
 **Negativ:**
 - Mehr Dateien als die ursprüngliche Single-File-Lösung
 - `BaseGesture`-Vertrag muss eingehalten werden (name, description, detect sind Pflicht)
+- Im `exclusive`-Modus bestimmt die Registrierungsreihenfolge das Verhalten – nicht offensichtlich ohne Dokumentation
 
 ## Referenzen
 

@@ -26,7 +26,14 @@ import { BaseGesture } from './BaseGesture.js';
  */
 export class GestureLibrary {
 
-  constructor() {
+  /**
+   * @param {object} [options]
+   * @param {boolean} [options.exclusive=true] – Wenn true, wird pro Frame
+   *   nur die ERSTE erkannte Geste gemeldet (Registrierungsreihenfolge = Priorität).
+   *   Entspricht der if/else-if-Kette aus Issue #2.
+   *   Wenn false, werden alle Gesten unabhängig ausgewertet.
+   */
+  constructor(options = {}) {
     /** @type {Map<string, BaseGesture>} */
     this._gestures = new Map();
 
@@ -41,6 +48,8 @@ export class GestureLibrary {
 
     /** @type {Set<string>} Aktuell aktive Gesten */
     this._activeGestures = new Set();
+
+    this._exclusive = options.exclusive ?? true;
   }
 
   // ── Registrierung ─────────────────────────────────────────────────────────
@@ -93,9 +102,13 @@ export class GestureLibrary {
    * Hauptmethode: Wertet alle registrierten Gesten gegen die aktuellen
    * Landmark-Daten aus. Einmal pro Frame aufrufen.
    *
-   * @param {Array[]} landmarksArray – Array von Landmark-Arrays, wie von
-   *   MediaPipe geliefert: handResults.landmarks (ein Array pro erkannter Hand).
-   *   Kann leer sein (keine Hand erkannt).
+   * Verhalten entspricht der Logik aus Issue #2:
+   *   - 1 Hand erkannt → nur Einhand-Gesten prüfen
+   *   - 2 Hände erkannt → nur Zweihand-Gesten prüfen
+   *   - Im exclusive-Modus (default): Registrierungsreihenfolge = Priorität,
+   *     erste erkannte Geste gewinnt (wie die if/else-if-Kette in Issue #2)
+   *
+   * @param {Array[]} landmarksArray – handResults.landmarks von MediaPipe
    * @param {object} [meta] – { timestamp, frameWidth, frameHeight }
    * @returns {Map<string, object>} Ergebnisse aller Gesten
    */
@@ -110,23 +123,36 @@ export class GestureLibrary {
     const results = new Map();
     const nowActive = new Set();
 
+    // Welche handCount-Kategorie ist aktiv?
+    // Entspricht dem if (numHands === 1) / else if (numHands === 2) aus Issue #2
+    const activeHandCount = numHands >= 2 ? 2 : 1;
+
+    // Wurde in diesem Frame bereits eine Geste erkannt? (für exclusive-Modus)
+    let alreadyDetected = false;
+
     for (const [name, gesture] of this._gestures) {
       try {
         let result;
 
-        if (gesture.handCount === 1) {
-          // Einhand-Geste: gegen die erste erkannte Hand testen
+        if (gesture.handCount !== activeHandCount) {
+          // Falsche Kategorie → Geste zurücksetzen und überspringen
+          // (z.B. Einhand-Gesten werden bei 2 Händen zurückgesetzt,
+          //  wie im Original: lastHand0Pos = null; stableStartTime = 0;)
+          gesture.reset();
+          result = { detected: false, confidence: 0, data: { reason: 'wrong-hand-count' } };
+
+        } else if (this._exclusive && alreadyDetected) {
+          // Exclusive-Modus: eine Geste hat bereits gewonnen → Rest überspringen
+          // Zustandsbehaftete Gesten trotzdem zurücksetzen, damit sie nicht
+          // "im Hintergrund" weiter zählen
+          gesture.reset();
+          result = { detected: false, confidence: 0, data: { reason: 'exclusive' } };
+
+        } else if (gesture.handCount === 1) {
           result = gesture.detect(landmarksArray[0], meta);
 
         } else if (gesture.handCount === 2) {
-          if (numHands >= 2) {
-            // Zweihand-Geste: beide Hände übergeben
-            result = gesture.detect(landmarksArray, meta);
-          } else {
-            // Nur eine Hand → Zweihand-Geste kann nicht erkannt werden
-            gesture.reset();
-            result = { detected: false, confidence: 0, data: { reason: 'need-two-hands' } };
-          }
+          result = gesture.detect(landmarksArray, meta);
         }
 
         results.set(name, result);
@@ -134,6 +160,7 @@ export class GestureLibrary {
 
         if (result.detected) {
           nowActive.add(name);
+          alreadyDetected = true;
           for (const listener of this._listeners) {
             listener(name, result);
           }
