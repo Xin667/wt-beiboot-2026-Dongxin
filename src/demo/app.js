@@ -3,18 +3,6 @@
  *
  * Basiert auf der index.html aus Issue #2, aber die Gestenlogik
  * kommt jetzt aus der Library (src/lib/) statt inline im Script.
- *
- * Was beibehalten wurde:
- *   - MediaPipe HandLandmarker + FaceLandmarker
- *   - Tracking-Mode-Umschaltung (Hands / Face / Both)
- *   - JSON-Recording + Download
- *   - Canvas-Overlay mit Landmark-Visualisierung
- *   - Terminal-Ästhetik
- *
- * Was sich geändert hat:
- *   - detectGestures()-Funktion entfernt → ersetzt durch lib.update()
- *   - Gesten werden per GestureLibrary registriert
- *   - Event-Log zeigt Library-Events (start/end)
  */
 
 // ── Library importieren ─────────────────────────────────────────────────────
@@ -24,8 +12,8 @@ import {
   PinchGesture,
   OpenHandStableGesture,
   TwoHandZoomGesture,
-  SwipeGesture,
   PeaceGesture,
+  ThumbsDownGesture,
 } from '../lib/index.js';
 
 // ── MediaPipe (gleiche Version wie Issue #2) ────────────────────────────────
@@ -49,41 +37,37 @@ const gestureOut  = document.getElementById('gesture-output');
 const gestureChips = document.getElementById('gesture-chips');
 
 // ── Gesture Library einrichten ──────────────────────────────────────────────
-const lib = new GestureLibrary();
+// exclusive: true → Registrierungsreihenfolge = Priorität.
+const lib = new GestureLibrary({ exclusive: true });
 
-// Issue #2 Gesten (Originalwerte)
+// Reihenfolge = Priorität (wie if/else-if in Issue #2)
+lib.register(new ThumbsUpGesture({ holdMs: 250 }));
+lib.register(new ThumbsDownGesture({ holdMs: 250 }));
 lib.register(new PinchGesture({ threshold: 0.04 }));
-lib.register(new ThumbsUpGesture());
-lib.register(new OpenHandStableGesture({ holdMs: 1500, maxMovement: 0.015 }));
-lib.register(new TwoHandZoomGesture({ minDelta: 0.01, minDistance: 0.2 }));
-
-// Issue #3 neue Gesten
-lib.register(new SwipeGesture({ threshold: 0.12, cooldownMs: 600 }));
 lib.register(new PeaceGesture({ holdMs: 400 }));
+lib.register(new OpenHandStableGesture({ holdMs: 1500, maxMovement: 0.015 }));
+lib.register(new TwoHandZoomGesture({ minDelta: 0.01, minDistance: 0.2, holdMs: 400 }));
 
-// Registrierte Gesten als Chips anzeigen
 renderGestureChips();
 
 // Gesten-Events loggen
 lib.onChange((event) => {
   const time = new Date().toLocaleTimeString('de-DE');
   const color = event.type === 'start' ? '#0f0' : '#f44';
-  const extra = event.result?.data?.direction ? ` (${event.result.data.direction})` : '';
-  const line = `<span style="color:${color}">[${time}] ${event.type.toUpperCase()} ${event.gesture}${extra}</span>\n`;
+  const line = `<span style="color:${color}">[${time}] ${event.type.toUpperCase()} ${event.gesture}</span>\n`;
   eventLog.innerHTML = line + eventLog.innerHTML;
-  // Max 40 Zeilen
   const lines = eventLog.querySelectorAll('span');
   if (lines.length > 40) lines[lines.length - 1].remove();
 });
 
-// ── Gesten-UI-Mapping (Emoji + Label, wie in Issue #2) ──────────────────────
+// ── Gesten-Labels ───────────────────────────────────────────────────────────
 const GESTURE_LABELS = {
-  'pinch':             'Zoom-out (Nah)',
   'thumbs-up':         'Start (Nah)',
+  'thumbs-down':       'Stop (Nah)',
+  'pinch':             'Zoom-out (Nah)',
+  'peace':             'Aufwecken',
   'open-hand-stable':  'Start (Fern)',
   'two-hand-zoom':     'Zoom-out (Fern)',
-  'swipe':             'Swipe',
-  'peace':             'Peace (Aufwecken)',
 };
 
 // ── MediaPipe Setup ─────────────────────────────────────────────────────────
@@ -178,14 +162,12 @@ function detect() {
       const handResults = handLandmarker.detectForVideo(video, now);
 
       if (handResults.landmarks.length > 0) {
-        // Landmarks zeichnen (Code aus Issue #2)
         handResults.landmarks.forEach((hand, handIndex) => {
           const handednessData = handResults.handednesses[handIndex];
           let category = 'Unknown';
           if (handednessData && handednessData.length > 0) {
             category = handednessData[0].categoryName || handednessData[0].displayName || 'Unknown';
           }
-          // Spiegelung: MediaPipe meldet aus Kameraperspektive
           if (category === 'Left') category = 'Right';
           else if (category === 'Right') category = 'Left';
 
@@ -218,16 +200,14 @@ function detect() {
           currentFrameData[handKey] = handPoints;
         });
 
-        // ─── ISSUE #3: Library statt inline detectGestures() ───
+        // Library: Hand-Gesten auswerten
         lib.update(handResults.landmarks, { timestamp: now });
-
       } else {
-        // Keine Hände → Library zurücksetzen
         lib.resetAll();
       }
     }
 
-    // ── Face-Tracking (unverändert aus Issue #2) ──
+    // ── Face-Tracking (Visualisierung, unverändert aus Issue #2) ──
     if (currentMode === 'face' || currentMode === 'both') {
       const faceResults = faceLandmarker.detectForVideo(video, now);
       if (faceResults.faceLandmarks.length > 0) {
@@ -264,10 +244,8 @@ function detect() {
       }
     }
 
-    // ── Recording ──
     if (isRecording) recordedSession.push(currentFrameData);
 
-    // ── UI-Updates ──
     updateGestureOverlay();
     updateGestureChipHighlights();
 
@@ -289,23 +267,12 @@ detect();
 
 function updateGestureOverlay() {
   const active = lib.getActiveGestures();
-
   if (active.length === 0) {
     gestureOut.style.display = 'none';
     return;
   }
-
-  // Höchste Priorität anzeigen (erste aktive Geste)
   const name = active[0];
-  const result = lib.getLastResult(name);
-  let label = GESTURE_LABELS[name] || name;
-
-  // Swipe: Richtung anhängen
-  if (name === 'swipe' && result?.data?.direction) {
-    label += ` → ${result.data.direction}`;
-  }
-
-  gestureOut.innerText = label;
+  gestureOut.innerText = GESTURE_LABELS[name] || name;
   gestureOut.style.display = 'block';
   gestureOut.style.backgroundColor = 'rgba(0, 150, 0, 0.9)';
 }
@@ -317,7 +284,7 @@ function renderGestureChips() {
     const chip = document.createElement('span');
     chip.className = 'gesture-chip';
     chip.id = `chip-${name}`;
-    chip.innerHTML = `${name}<span class="hands-badge">${gesture.handCount === 2 ? '🤲' : '🤚'}</span>`;
+    chip.textContent = name;
     gestureChips.appendChild(chip);
   }
 }
@@ -326,8 +293,6 @@ function updateGestureChipHighlights() {
   const active = new Set(lib.getActiveGestures());
   for (const name of lib.getRegisteredGestures()) {
     const chip = document.getElementById(`chip-${name}`);
-    if (chip) {
-      chip.classList.toggle('active', active.has(name));
-    }
+    if (chip) chip.classList.toggle('active', active.has(name));
   }
 }

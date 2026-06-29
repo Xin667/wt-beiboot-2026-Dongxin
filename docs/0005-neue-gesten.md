@@ -6,64 +6,43 @@
 
 ## Context and Problem Statement
 
-Issue #3 verlangt mindestens zwei weitere Gesten aus der Mapping-Tabelle (`gestenvokabular.md`), zusätzlich zu den vier aus Issue #2 übernommenen Gesten (Pinch, ThumbsUp, OpenHandStable, TwoHandZoom).
-
-Die Auswahl soll möglichst unterschiedliche algorithmische Ansätze abdecken – analog zur Begründung in ADR 0002.
+Issue #3 verlangt mindestens zwei weitere Gesten aus der Mapping-Tabelle, zusätzlich zu den aus Issue #2 übernommenen Gesten.
 
 ## Betrachtete Kandidaten
 
-Aus der Mapping-Tabelle (noch nicht implementiert):
-
-| Interaktion | Geste | Neue Konzepte? | Reliabilität |
+| Interaktion | Geste | Reliabilität | Gewählt? |
 |---|---|---|---|
-| zurück/vor | Swipe (Wischbewegung) | Ja: zeitbasiert, History | Hoch (große Deltas) |
-| System aufwecken | Peace / V-Geste | Ja: neue Fingerkombination | Hoch |
-| stop | Thumbs-Down | Nein: invertiertes ThumbsUp | Hoch |
-| stop (Fern) | Faust | Teilweise: alle Finger eingeklappt | Hoch |
-| zoom-in | Spreizen | Nein: invertierter Pinch | Hoch |
-| System schlafen | X mit zwei Zeigefingern | Ja, aber: braucht zwei Hände | Mittel |
+| System aufwecken | Peace / V-Geste | Hoch | Ja |
+| stop (Nah) | Thumbs-Down | Hoch | Ja |
+| zurück/vor | Swipe (Wischbewegung) | Mittel | Nein |
+| System schlafen | Augen schließen (Face) | Mittel | Nein |
+| stop (Fern) | Faust | Hoch | Nein |
 
 ## Decision Outcome
 
-Gewählt wurden **Swipe** und **Peace**.
-
-### Swipe (zurück/vor)
-**Begründung:** Die vier Issue-#2-Gesten erkennen alle statische Zustände innerhalb eines Frames (auch OpenHandStable, deren Zeitfenster nur der Stabilisierung dient). Swipe führt ein fundamental neues Paradigma ein: **Bewegungsanalyse über mehrere Frames hinweg**. Der Algorithmus speichert eine Positions-History und berechnet die Netto-Verschiebung über ein gleitendes Zeitfenster. Das ist eine qualitativ andere Art der Erkennung als Schwellenwertvergleiche auf statischen Koordinaten.
-
-Implementierungsdetails:
-- History: Speichert die letzten 30 Handgelenkpositionen (LM 0) mit Timestamp
-- Zeitfenster: 300ms – Verschiebung = aktuelle Position minus Position vor 300ms
-- Threshold: 0.12 (normalisiert) – bei normaler Armlänge ca. 12% der Bildbreite
-- Richtung: dominante Achse gewinnt (|dx| > |dy| → horizontal)
-- Display-Phase: 500ms – nach Erkennung bleibt die Geste für die UI sichtbar aktiv
-- Cooldown: 600ms NACH der Display-Phase bis zur nächsten möglichen Erkennung
-- Swipe ist eine Ereignis-Geste (einmalig ausgelöst), keine Pose (durchgehend gehalten)
+Gewählt wurden **Peace** und **ThumbsDown**.
 
 ### Peace (System aufwecken)
-**Begründung:** Die bisherigen Gesten prüfen entweder „alle Finger eingeklappt" (ThumbsUp), „alle Finger gestreckt" (OpenHandStable), oder zwei spezifische Finger gegeneinander (Pinch). Peace bringt eine neue Kombination: **genau zwei bestimmte Finger gestreckt, der Rest eingeklappt**. Das testet die Fähigkeit der Library, differenzierte Fingerzustandsprüfungen auszudrücken. Die Geste ist laut Mapping-Tabelle als „bewusste Geste" mit hoher Reliabilität eingestuft.
+Genau zwei Finger gestreckt (Zeige- + Mittelfinger), Rest eingeklappt. Bringt eine neue Fingerkombination, die sich klar von ThumbsUp (nur Daumen) und OpenHandStable (alle Finger) unterscheidet.
 
-Implementierungsdetails:
-- Zeige- und Mittelfinger gestreckt (tip.y < mcp.y)
-- Ring- und kleiner Finger eingeklappt (tip.y > mcp.y)
-- Daumen wird bewusst NICHT geprüft: Bei der V-Geste variiert die Daumenposition stark (eingeklappt, abgespreizt, neutral). Die Kombination Index+Middle gestreckt + Ring+Pinky eingeklappt ist bereits ausreichend eindeutig.
-- Haltezeit: 400ms Stabilisierung
+### ThumbsDown (Stop, Nahbereich)
+Invertierte ThumbsUp-Logik: Daumenspitze UNTER Daumen-IP und UNTER Index-Basis, alle anderen Finger eingeklappt. Einfach, zuverlässig, direkt aus der Mapping-Tabelle.
 
 ### Nicht gewählt
 
-**Thumbs-Down** und **Zoom-in (Spreizen)** wurden nicht gewählt, weil sie algorithmisch invertierte Versionen bestehender Gesten wären und keine neuen Erkennungskonzepte einbringen.
+**Swipe** wurde zunächst implementiert, aber wieder entfernt: Die bewegungsbasierte Erkennung (Wrist-Position-History über 300ms) erzeugte zu viele False Positives – normale Handbewegungen zwischen Gesten wurden fälschlich als Wischbewegung erkannt. Die Trennschärfe zwischen „absichtlichem Wischen" und „Hand bewegt sich gerade" war in der Praxis nicht robust zu lösen.
 
-**X-Geste (System schlafen)** wurde nicht gewählt, weil sie zwei Hände erfordert und MediaPipe bei sich kreuzenden Händen bekannte Stabilitätsprobleme hat (dokumentiert in ADR 0003).
+**Augen schließen (Face)** wurde ebenfalls implementiert und wieder entfernt: In Issue #2 wurde keine Face-basierte Gestenerkennung entwickelt, daher passt eine Face-Geste nicht konsistent in den Projektaufbau.
+
+**Faust** wurde nicht gewählt, da sie algorithmisch zu ähnlich zu OpenHandStable wäre (invertierte Bedingung: alle Finger eingeklappt statt gestreckt).
 
 ## Consequences
 
-Die Library hat jetzt sechs Gesten mit vier Erkennungsparadigmen:
+Die Library hat sechs Gesten, alle auf Hand-Landmarks basierend:
 
 | Paradigma | Gesten |
 |---|---|
-| Statische Pose (Fingervergleiche) | ThumbsUp, Peace |
-| Distanzbasiert (Punkt-zu-Punkt) | Pinch |
+| Statische Pose (Fingervergleiche) | ThumbsUp, ThumbsDown, Peace |
+| Distanzbasiert | Pinch |
 | Zustandsbehaftet (Haltezeit) | OpenHandStable |
-| Bewegungsbasiert (History + Zeitfenster) | Swipe |
 | Zweihand-Tracking | TwoHandZoom |
-
-Das zeigt, dass die Library-Architektur (ADR 0004) flexibel genug ist, um konzeptionell verschiedene Gestentypen zu unterstützen.

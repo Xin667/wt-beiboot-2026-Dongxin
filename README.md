@@ -9,7 +9,7 @@ Die vier prototypischen Gesten aus Issue #2 wurden zusammen mit zwei neuen Geste
 | Kriterium | Status | Nachweis |
 |---|---|---|
 | Gestenlogik in eigenständiger Library, getrennt von Demo | ✅ | `src/lib/` (Library) vs. `src/demo/` (Anwendung) |
-| Mind. 4 Gesten (2 aus #2 + 2 neue) implementiert | ✅ | 6 Gesten: 4 aus #2 + 2 neue (Swipe, Peace) |
+| Mind. 4 Gesten (2 aus #2 + 2 neue) implementiert | ✅ | 6 Gesten: 4 aus #2 + 2 neue (Peace, EyeClose) |
 | Neue Gesten hinzufügbar ohne bestehenden Code zu ändern | ✅ | `BaseGesture` erben → `lib.register()`, Beispiel in API-Doku |
 | Öffentliche API dokumentiert | ✅ | `docs/issue3/api-dokumentation.md` |
 | Designentscheidungen in Decision Records | ✅ | ADR 0004 (Architektur), ADR 0005 (Gestenauswahl) |
@@ -21,18 +21,19 @@ Die vier prototypischen Gesten aus Issue #2 wurden zusammen mit zwei neuen Geste
 | `detectGestures()` – eine Funktion mit if/else | Sechs eigenständige Klassen unter `src/lib/gestures/` |
 | Schwellenwerte direkt im Code | Konfigurierbar per Konstruktor-Optionen |
 | Gestenlogik und UI vermischt | Library (`src/lib/`) hat keine DOM-Abhängigkeiten |
-| Nur 4 Gesten | 6 Gesten mit 4 verschiedenen Erkennungsparadigmen |
+| Nur Hand-Tracking für Gesten | Hand- und Face-Gesten über `source`-Eigenschaft |
+| Priorität via if/else-if-Kette | `exclusive`-Modus in GestureLibrary |
 
 ## Die sechs Gesten
 
-| Geste | Interaktion | Paradigma | Herkunft |
+| Geste | Interaktion | Datenquelle | Herkunft |
 |---|---|---|---|
-| ThumbsUp | Start (Nah) | Statische Pose | Issue #2 |
-| Pinch | Zoom-out (Nah) | Distanzbasiert | Issue #2 |
-| OpenHandStable | Start (Fern) | Haltezeit-Stabilisierung | Issue #2 |
-| TwoHandZoom | Zoom-out (Fern) | Zweihand-Tracking | Issue #2 |
-| **Swipe** | **zurück/vor** | **Bewegungs-History** | **Issue #3** |
-| **Peace** | **System aufwecken** | **Fingerkombination** | **Issue #3** |
+| ThumbsUp | Start (Nah) | Hand | Issue #2 |
+| Pinch | Zoom-out (Nah) | Hand | Issue #2 |
+| OpenHandStable | Start (Fern) | Hand | Issue #2 |
+| TwoHandZoom | Zoom-out (Fern) | Hand (2x) | Issue #2 |
+| **Peace** | **System aufwecken** | **Hand** | **Issue #3** |
+| **EyeClose** | **System schlafen** | **Face** | **Issue #3** |
 
 ## Lokal starten
 
@@ -44,7 +45,7 @@ python3 -m http.server 8080
 
 ## Dokumentation
 
-- [API-Dokumentation](api-dokumentation.md) – Schnellstart, alle Gesten, eigene Geste schreiben
-- [ADR 0004: Library-Architektur](0004-library-architektur.md) – Registry-Pattern vs. Monolith
-- [ADR 0005: Neue Gesten](0005-neue-gesten.md) – Warum Swipe und Peace, warum nicht Fist oder X
+- [API-Dokumentation](api-dokumentation.md)
+- [ADR 0004: Library-Architektur](0004-library-architektur.md)
+- [ADR 0005: Neue Gesten](0005-neue-gesten.md)
 - [Zeiterfassung](time-tracking.md)

@@ -11,16 +11,16 @@ import {
   GestureLibrary,
   ThumbsUpGesture,
   PinchGesture,
-  SwipeGesture,
+  PeaceGesture,
 } from './lib/index.js';
 
 // 1. Library instanziieren (exclusive: Registrierungsreihenfolge = Priorität)
 const lib = new GestureLibrary({ exclusive: true });
 
 // 2. Gesten registrieren – Reihenfolge bestimmt Priorität!
-lib.register(new PinchGesture({ threshold: 0.04 }));   // höchste Priorität
-lib.register(new ThumbsUpGesture({ holdMs: 250 }));
-lib.register(new SwipeGesture());
+lib.register(new ThumbsUpGesture({ holdMs: 250 }));    // höchste Priorität
+lib.register(new PinchGesture({ threshold: 0.04 }));
+lib.register(new PeaceGesture({ holdMs: 400 }));
 
 // 3. Auf erkannte Gesten reagieren
 lib.onGesture((name, result) => {
@@ -196,24 +196,19 @@ new TwoHandZoomGesture({ minDelta: 0.01, minDistance: 0.2, holdMs: 400 })
 
 **Hinweis:** `handCount === 2` – wird nur ausgewertet, wenn zwei Hände erkannt werden.
 
-### SwipeGesture (Issue #3 – neu)
+### ThumbsDownGesture (Issue #3 – neu)
 
-Wischbewegung – Navigation (zurück / vor / oben / unten).
+Daumen runter – Stop-Geste im Nahbereich.
 
 ```js
-new SwipeGesture({ threshold: 0.12, windowMs: 300, displayMs: 500, cooldownMs: 600 })
+new ThumbsDownGesture({ holdMs: 250 })
 ```
 
 | Option | Default | Beschreibung |
 |---|---|---|
-| `threshold` | `0.12` | Mindest-Verschiebung auf einer Achse |
-| `windowMs` | `300` | Zeitfenster für die Bewegungsmessung |
-| `displayMs` | `500` | Wie lange die Geste nach Erkennung als „aktiv" gemeldet wird (für sichtbares UI-Feedback) |
-| `cooldownMs` | `600` | Pause NACH displayMs bis zur nächsten möglichen Erkennung |
+| `holdMs` | `250` | Mindest-Haltedauer |
 
-**data:** `{ direction: 'left'|'right'|'up'|'down', dx: number, dy: number }`
-
-**Hinweis:** Swipe ist eine Ereignis-Geste, keine Pose. Sie wird einmal ausgelöst, bleibt `displayMs` lang aktiv (damit die UI sie anzeigen kann), und geht dann in die Cooldown-Phase.
+**data:** `{ heldMs: number }`
 
 ### PeaceGesture (Issue #3 – neu)
 
@@ -298,8 +293,8 @@ src/
 │   │   ├── PinchGesture.js           ← Issue #2: Zoom-out (Nah)
 │   │   ├── OpenHandStableGesture.js  ← Issue #2: Start (Fern)
 │   │   ├── TwoHandZoomGesture.js     ← Issue #2: Zoom-out (Fern)
-│   │   ├── SwipeGesture.js           ← Issue #3: zurück/vor
-│   │   └── PeaceGesture.js           ← Issue #3: System aufwecken
+│   │   ├── PeaceGesture.js           ← Issue #3: System aufwecken
+│   │   └── ThumbsDownGesture.js      ← Issue #3: Stop (Nah)
 │   └── utils/
 │       └── landmarks.js              ← Konstanten & Hilfsfunktionen
 ├── demo/                             ← Demo-Anwendung (getrennt von Library)
