@@ -18,18 +18,17 @@ Keine Installation notwendig. Die Anwendung läuft direkt im Browser.
 
 > Ein lokaler Webserver ist notwendig, da MediaPipe die Modelldateien per HTTP lädt. Das direkte Öffnen der Datei im Browser funktioniert nicht.
 
+## Branches
+
+Drei Issues befinden sich in den drei Branches.
+
 ## Decision Records
 
-Die Architekturentscheidungen sind nach Issue dokumentiert:
-
-* [Issue 1 – ML-Library](./docs/issue1/0001-mediapipe-as-ml-library.md)
-* [Issue 2 – Gestenauswahl](./docs/issue2/0002-gestenauswahl.md)
-* [Issue 2 – Algorithmus & Stabilität](./docs/issue2/0003-algorithmus-und-stabilitaet.md)
+Die Architekturentscheidungen sind nach Issue dokumentiert in `/docs`
 
 ## Process Documentation
 
-* [Time Tracking Issue 1](./docs/issue1/time-tracking.md)
-* [Time Tracking Issue 2](./docs/issue2/time-tracking.md)
+Die Process Documentation ist nach Issue dokumentiert in `/docs`
 
 ## Notes
 
