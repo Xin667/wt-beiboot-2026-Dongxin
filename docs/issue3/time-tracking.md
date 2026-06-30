@@ -2,15 +2,15 @@
 
 | Aufgabe | Zeit |
 | :--- | :--- |
-| Bestehende Gesture Libraries recherchieren (Fingerpose, ZingTouch, Hammer.js) | 1.0h |
-| Library-Architektur entwerfen (Registry-Pattern) + ADR 0004 | 1.5h |
-| BaseGesture, GestureLibrary, Utilities implementieren | 2.0h |
+| Bestehende Gesture Libraries recherchieren (Fingerpose, ZingTouch, Hammer.js) | 2.0h |
+| Library-Architektur entwerfen (Registry-Pattern) + ADR 0004 | 2.5h |
+| BaseGesture, GestureLibrary, Utilities implementieren | 3.0h |
 | Issue-#2-Gesten in Library-Struktur überführen | 1.5h |
 | Neue Gesten implementieren (Peace, ThumbsDown) | 1.0h |
-| Demo-Anwendung refactored (detectGestures → lib.update) | 1.5h |
-| Testen & Stabilisierung (Prioritätslogik, holdMs, False Positives) | 2.0h |
+| Demo-Anwendung refactored (detectGestures → lib.update) | 2.5h |
+| Testen & Stabilisierung (Prioritätslogik, holdMs, False Positives) | 3.0h |
 | Dokumentation (API-Doku, ADR 0005) | 1.5h |
-| **Gesamt** | **12.0h** |
+| **Gesamt** | **16.0h** |
 
 ## Reflexion
 
