@@ -1,4 +1,4 @@
-# Von Einzelgesten zur wiederverwendbaren Bibliothek
+# Issue #3: Von Einzelgesten zur wiederverwendbaren Bibliothek
 
 Die prototypischen Gesten aus Issue #2 wurden in eine eigenständige, erweiterbare Gesture Library überführt. Die Library ist von der Demo-Anwendung getrennt und kann von Dritten genutzt werden, ohne den Quellcode lesen zu müssen.
 
@@ -37,7 +37,7 @@ function onResults(handResults) {
 
 ## Lokal starten
 
-```bash
+```
 IDE: Go Live auf src/demo/index.html
 ```
 
@@ -58,85 +58,30 @@ Eigenschaften und Methoden mit `_`-Präfix können sich ohne Vorwarnung ändern 
 
 ---
 
-## GestureLibrary
+## GestureLibrary: API-Referenz
 
-### `new GestureLibrary(options?)`
+### `new GestureLibrary(options?)
+
+Erstellt eine neue Library-Instanz ohne registrierte Gesten.
 
 | Option | Default | Beschreibung |
 |---|---|---|
-| `exclusive` | `true` | Pro Frame wird nur die ERSTE erkannte Geste gemeldet. Registrierungsreihenfolge = Priorität. Bei `false` werden alle Gesten unabhängig ausgewertet. |
+| `exclusive` | `true` | Wenn true: Pro Frame wird nur die ERSTE erkannte Geste gemeldet. Registrierungsreihenfolge = Priorität; wenn false: alle Gesten werden unabhängig ausgewertet. |
 
-Bei 1 Hand werden nur Einhand-Gesten geprüft, bei 2 Händen nur Zweihand-Gesten.
+Zusätzlich wird automatisch nach Handanzahl getrennt: Bei 1 Hand werden nur Einhand-Gesten geprüft, bei 2 Händen nur Zweihand-Gesten.
 
-### `lib.register(gesture)` → `GestureLibrary`
-
-Registriert eine Geste. Chaining möglich. Im exclusive-Modus bestimmt die Reihenfolge die Priorität.
-
-```js
-lib.register(new PinchGesture())      // Priorität 1
-   .register(new ThumbsUpGesture());  // Priorität 2
-```
-
-### `lib.unregister(name)` → `boolean`
-
-Entfernt eine registrierte Geste.
-
-### `lib.update(landmarksArray, meta?)` → `Map`
-
-Hauptmethode. Wertet alle Gesten gegen die aktuellen Landmark-Daten aus. Einmal pro Frame aufrufen.
-
-```js
-lib.update(handResults.landmarks, { timestamp: performance.now() });
-```
-
-Routing: Einhand-Gesten (`handCount === 1`) bekommen `landmarksArray[0]`, Zweihand-Gesten (`handCount === 2`) bekommen `[hand0, hand1]`.
-
-### `lib.getActiveGestures()` → `string[]`
-
-Namen der aktuell erkannten Gesten.
-
-### `lib.getLastResult(name)` → `object | undefined`
-
-Letztes Erkennungsergebnis einer bestimmten Geste.
-
-### `lib.getRegisteredGestures()` → `string[]`
-
-Namen aller registrierten Gesten.
-
-### `lib.getGesture(name)` → `BaseGesture | undefined`
-
-Gibt die Gesten-Instanz zurück.
-
-### `lib.onGesture(callback)` → `function`
-
-Callback bei jeder erkannten Geste (pro Frame). Gibt Unsubscribe-Funktion zurück.
-
-```js
-const unsub = lib.onGesture((name, result) => {
-  console.log(name, result.confidence);
-});
-// Später: unsub();
-```
-
-### `lib.onChange(callback)` → `function`
-
-Callback bei Zustandswechsel (Geste startet / endet).
-
-```js
-lib.onChange((event) => {
-  // event.type: 'start' oder 'end'
-  // event.gesture: Name der Geste
-  // event.result: Erkennungsergebnis (nur bei 'start')
-});
-```
-
-### `lib.resetAll()`
-
-Setzt alle Gesten zurück. Aufrufen, wenn keine Hand erkannt wird.
-
-### `lib.dispose()`
-
-Entfernt alle Gesten und Listener.
+### Methode
+Folgende Methoden wurden implementiert:
+| Methode | Beschreibung |
+|---|---|
+| `register(gesture)` | Geste registrieren. Reihenfolge = Priorität. Chaining möglich. |
+| `update(landmarks, meta?)` | Alle Gesten auswerten. `landmarks` = `handResults.landmarks` von MediaPipe. |
+| `getActiveGestures()` | Namen der aktuell erkannten Gesten (`string[]`). |
+| `getLastResult(name)` | Letztes Ergebnis einer Geste (`{detected, confidence, data}`). |
+| `onGesture(callback)` | Callback bei jeder erkannten Geste. Gibt Unsubscribe-Funktion zurück. |
+| `onChange(callback)` | Callback bei Start/Ende einer Geste (`{type: 'start'\|'end', gesture}`). |
+| `resetAll()` | Alle Gesten zurücksetzen (wenn keine Hand erkannt wird). |
+| `dispose()` | Alle Gesten und Listener entfernen. |
 
 ---
 
@@ -279,10 +224,10 @@ lib.register(new FistGesture());
 
 ```
 src/
-├── lib/                              ← Die Library (eigenständig nutzbar)
+├── lib/                              ← Die Library
 │   ├── index.js                      ← Haupt-Export
 │   ├── GestureLibrary.js             ← Registry & Engine
-│   ├── BaseGesture.js                ← Basisklasse / Vertrag
+│   ├── BaseGesture.js                ← Basisklasse
 │   ├── gestures/
 │   │   ├── ThumbsUpGesture.js        ← Issue #2: Start (Nah)
 │   │   ├── ThumbsDownGesture.js      ← Issue #3: Stop (Nah)
@@ -292,20 +237,11 @@ src/
 │   │   └── TwoHandZoomGesture.js     ← Issue #2: Zoom-out (Fern)
 │   └── utils/
 │       └── landmarks.js              ← Konstanten & Hilfsfunktionen
-├── demo/                             ← Demo-Anwendung (getrennt von Library)
+├── demo/                             ← Demo-Anwendung
 │   ├── index.html
 │   └── app.js
 ```
 
-## Akzeptanzkriterien
-
-| Kriterium | Status |
-|---|---|
-| Gestenlogik in eigenständiger Library, getrennt von Demo | ✅ `src/lib/` vs. `src/demo/` |
-| Mind. 4 Gesten (2 aus #2 + 2 neue) implementiert | ✅ 6 Gesten |
-| Neue Gesten hinzufügbar ohne bestehenden Code zu ändern | ✅ Siehe „Eigene Geste schreiben" |
-| Öffentliche API dokumentiert | ✅ Siehe oben |
-| Designentscheidungen in Decision Records | ✅ ADR 0004, ADR 0005 |
 
 ## Weitere Dokumentation
 
