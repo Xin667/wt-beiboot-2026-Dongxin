@@ -4,11 +4,9 @@
 **Author:** Dongxin Wang
 **Status:** Accepted
 
-## Context and Problem Statement
+## Context
 
-Das Projekt benötigt eine ML-Library, die Körperdaten (Hände, Pose, Gesten) in Echtzeit im Browser erkennt, zwar ohne Server, nur clientseitig.
-
-## Considered Options
+Das Projekt benötigt eine ML-Library, die Körperdaten (Hände, Pose, Gesten) in Echtzeit im Browser erkennt, zwar ohne Server, nur clientseitig.  
 
 Zur Wahl standen:
 - **MediaPipe (Google):** 
@@ -22,7 +20,7 @@ Allgemeines ML-Framework, größerer Konfigurationsaufwand, weniger spezialisier
 - **hand-pose-detection:** 
 Leichtgewichtig, aber nur für Hände. Zu eingeschränkt für den geplanten Funktionsumfang der Library
 
-## Decision Outcome
+## Decision
 
 Ich verwende **MediaPipe Tasks Vision** als primäre ML-Library.
 
