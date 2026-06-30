@@ -8,17 +8,17 @@ Ziel ist die browserbasierte Erfassung und Verarbeitung von Körperdaten (Hand- 
 Author: [Dongxin Wang](https://github.com/Xin667)
 Reviewer: [Christian Noss](https://github.com/cnoss)
 
-## Quick Start
+## Start Demo
 
 Keine Installation notwendig. Die Anwendung läuft direkt im Browser.
 
 1. Repository klonen
-2. In `index.html` mit z.B VS Code "Go Live" starten
+2. In `./src/demo/index.html` mit z.B VS Code "Go Live" starten
 3. Kamerazugriff von der Browser erlauben
 
 > Ein lokaler Webserver ist notwendig, da MediaPipe die Modelldateien per HTTP lädt. Das direkte Öffnen der Datei im Browser funktioniert nicht.
 
-## Schnellstart
+## Einführung in die Library
 
 ```js
 import {
