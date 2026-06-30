@@ -200,10 +200,10 @@ lib.register(new FistGesture());
 
 | Eigenschaft/Methode | Pflicht | Beschreibung |
 |---|---|---|
-| `name` (getter) | ✅ | Eindeutiger String |
-| `description` (getter) | ✅ | Kurze Beschreibung |
+| `name` (getter) | Ja | Eindeutiger String |
+| `description` (getter) | Ja | Kurze Beschreibung |
 | `handCount` (getter) | Optional | `1` (default) oder `2` |
-| `detect(landmarks, meta)` | ✅ | Gibt `{detected, confidence, data?}` zurück |
+| `detect(landmarks, meta)` | Ja | Gibt `{detected, confidence, data?}` zurück |
 | `reset()` | Optional | Internen Zustand zurücksetzen |
 | `dispose()` | Optional | Ressourcen aufräumen |
 
