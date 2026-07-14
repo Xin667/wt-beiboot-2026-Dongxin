@@ -6,6 +6,12 @@ import { BaseGesture } from './BaseGesture.js';
  * Designentscheidung: Registry-Pattern (siehe ADR 0004).
  * Neue Gesten werden per register() hinzugefügt, ohne bestehenden Code zu ändern.
  *
+ * Erbt von EventTarget (siehe ADR 0006) und dispatcht native CustomEvents:
+ *   - 'gesture'      – bei jeder erkannten Geste (pro Frame)
+ *   - 'gesturestart' – beim Übergang zu erkannt
+ *   - 'gestureend'   – beim Übergang zu nicht mehr erkannt
+ * onGesture()/onChange() bleiben als abwärtskompatible Convenience-Wrapper erhalten.
+ *
  * Unterstützt Einhand- und Zweihand-Gesten:
  *   - Einhand (handCount === 1): Library testet die Geste gegen jede erkannte Hand
  *   - Zweihand (handCount === 2): Library übergibt beide Hände als Array von Arrays
@@ -17,14 +23,14 @@ import { BaseGesture } from './BaseGesture.js';
  *   lib.register(new ThumbsUpGesture());
  *   lib.register(new PinchGesture());
  *
- *   lib.onGesture((name, result) => {
- *     console.log(`Geste erkannt: ${name}`, result);
+ *   lib.addEventListener('gesturestart', (e) => {
+ *     console.log(`Geste erkannt: ${e.detail.gesture}`, e.detail.result);
  *   });
  *
  *   // Im MediaPipe-Callback:
  *   lib.update(results.landmarks, { timestamp: performance.now() });
  */
-export class GestureLibrary {
+export class GestureLibrary extends EventTarget {
 
   /**
    * @param {object} [options]
@@ -34,17 +40,13 @@ export class GestureLibrary {
    *   Wenn false, werden alle Gesten unabhängig ausgewertet.
    */
   constructor(options = {}) {
+    super();
+
     /** @type {Map<string, BaseGesture>} */
     this._gestures = new Map();
 
     /** @type {Map<string, object>} Letztes Ergebnis pro Geste */
     this._lastResults = new Map();
-
-    /** @type {Set<function>} Listener: wird bei JEDER erkannten Geste aufgerufen */
-    this._listeners = new Set();
-
-    /** @type {Set<function>} Listener: wird bei Start/Ende einer Geste aufgerufen */
-    this._changeListeners = new Set();
 
     /** @type {Set<string>} Aktuell aktive Gesten */
     this._activeGestures = new Set();
@@ -161,9 +163,7 @@ export class GestureLibrary {
         if (result.detected) {
           nowActive.add(name);
           alreadyDetected = true;
-          for (const listener of this._listeners) {
-            listener(name, result);
-          }
+          this.dispatchEvent(new CustomEvent('gesture', { detail: { gesture: name, result } }));
         }
       } catch (err) {
         console.warn(`Fehler in Geste "${name}":`, err);
@@ -192,21 +192,30 @@ export class GestureLibrary {
 
   /**
    * Callback bei jeder erkannten Geste (pro Frame).
+   * Convenience-Wrapper um das native 'gesture'-Event (siehe addEventListener()).
    * @returns {function} Unsubscribe-Funktion
    */
   onGesture(callback) {
-    this._listeners.add(callback);
-    return () => this._listeners.delete(callback);
+    const handler = (e) => callback(e.detail.gesture, e.detail.result);
+    this.addEventListener('gesture', handler);
+    return () => this.removeEventListener('gesture', handler);
   }
 
   /**
    * Callback bei Zustandswechsel (Geste startet / endet).
+   * Convenience-Wrapper um die nativen 'gesturestart'/'gestureend'-Events.
    * @param {function({type: 'start'|'end', gesture: string, result?: object})} callback
    * @returns {function} Unsubscribe-Funktion
    */
   onChange(callback) {
-    this._changeListeners.add(callback);
-    return () => this._changeListeners.delete(callback);
+    const onStart = (e) => callback({ type: 'start', gesture: e.detail.gesture, result: e.detail.result });
+    const onEnd = (e) => callback({ type: 'end', gesture: e.detail.gesture });
+    this.addEventListener('gesturestart', onStart);
+    this.addEventListener('gestureend', onEnd);
+    return () => {
+      this.removeEventListener('gesturestart', onStart);
+      this.removeEventListener('gestureend', onEnd);
+    };
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -216,23 +225,23 @@ export class GestureLibrary {
     this._resetAll();
   }
 
-  /** Entfernt alle Gesten und Listener. */
+  /**
+   * Entfernt alle Gesten. EventTarget kennt kein Bulk-Unsubscribe – Abonnenten,
+   * die addEventListener() direkt genutzt haben, müssen sich selbst abmelden.
+   * Die Unsubscribe-Funktionen von onGesture()/onChange() funktionieren wie gewohnt.
+   */
   dispose() {
     for (const g of this._gestures.values()) g.dispose();
     this._gestures.clear();
     this._lastResults.clear();
     this._activeGestures.clear();
-    this._listeners.clear();
-    this._changeListeners.clear();
   }
 
   // ── Private ───────────────────────────────────────────────────────────────
 
   _resetAll() {
     for (const name of this._activeGestures) {
-      for (const listener of this._changeListeners) {
-        listener({ type: 'end', gesture: name });
-      }
+      this.dispatchEvent(new CustomEvent('gestureend', { detail: { gesture: name } }));
     }
     for (const g of this._gestures.values()) g.reset();
     this._activeGestures.clear();
@@ -242,16 +251,14 @@ export class GestureLibrary {
   _emitChanges(nowActive) {
     for (const name of nowActive) {
       if (!this._activeGestures.has(name)) {
-        for (const l of this._changeListeners) {
-          l({ type: 'start', gesture: name, result: this._lastResults.get(name) });
-        }
+        this.dispatchEvent(new CustomEvent('gesturestart', {
+          detail: { gesture: name, result: this._lastResults.get(name) },
+        }));
       }
     }
     for (const name of this._activeGestures) {
       if (!nowActive.has(name)) {
-        for (const l of this._changeListeners) {
-          l({ type: 'end', gesture: name });
-        }
+        this.dispatchEvent(new CustomEvent('gestureend', { detail: { gesture: name } }));
       }
     }
   }
