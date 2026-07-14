@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestensteuerung – Präsentation (Issue #4)</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: #111;
+      color: #eee;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #slide-container {
+      max-width: 640px;
+      padding: 40px;
+      text-align: center;
+    }
+
+    #slide-container h1 {
+      font-size: 2.4em;
+      margin-bottom: 0.4em;
+    }
+
+    #slide-container p {
+      font-size: 1.3em;
+      color: #ccc;
+      line-height: 1.5;
+    }
+
+    #idle-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: #111;
+      text-align: center;
+    }
+
+    #idle-overlay .big {
+      font-size: 4em;
+    }
+
+    #idle-overlay .hint {
+      color: #888;
+      font-size: 0.95em;
+    }
+
+    #slide-counter {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #666;
+      font-size: 0.9em;
+    }
+
+    #status {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      color: #666;
+      font-size: 0.8em;
+      font-family: monospace;
+      white-space: pre;
+    }
+
+    #video-preview {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 160px;
+      height: 120px;
+      object-fit: cover;
+      transform: scaleX(-1);
+      border: 1px solid #333;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <div id="idle-overlay">
+      <div class="big">✌️</div>
+      <div>Zeige die Peace-Geste, um die Präsentation zu starten</div>
+      <div class="hint">(oder Taste „W“ als Fallback ohne Kamera)</div>
+    </div>
+
+    <div id="slide-container" style="display:none">
+      <h1 id="slide-title"></h1>
+      <p id="slide-body"></p>
+    </div>
+
+    <div id="slide-counter" style="display:none"></div>
+    <pre id="status">Initialisiere...</pre>
+    <video id="video-preview" width="160" height="120" autoplay playsinline muted></video>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
