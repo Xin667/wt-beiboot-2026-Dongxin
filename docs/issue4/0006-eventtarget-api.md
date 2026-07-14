@@ -15,6 +15,8 @@ Beim Bau der Präsentations-App in Issue #4 (`src/presentation/`, ausschließlic
 
 Diese Beobachtungen (Details: Beobachtungen 1–4 in `friction-notes.md`) treten wiederholt auf und lassen sich alle auf dieselbe Ursache zurückführen: fehlende `EventTarget`-Konformität.
 
+Eine kleinere, unabhängige Doku-Lücke fiel ebenfalls auf (Beobachtung 3b): `unregister()`, `getRegisteredGestures()` und `getGesture()` sind implementiert und werden von der Issue-#3-Demo genutzt, fehlten aber in der README-API-Tabelle. Als Nebenbei-Fix zusammen mit dieser Änderung in der README ergänzt (kein Library-Code betroffen).
+
 ## Considered Options
 
 * **Option A – Status quo:** `onGesture`/`onChange` bleiben eigenständige Callback-Methoden.
@@ -26,7 +28,7 @@ Diese Beobachtungen (Details: Beobachtungen 1–4 in `friction-notes.md`) treten
 Gewählt: **Option C**.
 
 - Löst die Diskrepanz zu `PROJECT.md` vollständig: `lib.addEventListener('gesturestart', cb)` verhält sich strukturell identisch zu `window.addEventListener('keydown', cb)` – im Präsentations-Code direkt nebeneinander sichtbar (`src/presentation/app.js`).
-- Im Gegensatz zu Option B bricht **Option A**+**B** die bestehende Demo-Anwendung aus Issue #3 (`src/demo/app.js`) nicht: Diese nutzt ausschließlich `lib.onChange(...)`, was mit Option C unverändert weiterläuft, da der Wrapper exakt dieselbe Signatur und dasselbe Payload-Format zurückgibt.
+- Im Gegensatz zu Option B bricht Option C die bestehende Demo-Anwendung aus Issue #3 (`src/demo/app.js`) nicht: Diese nutzt ausschließlich `lib.onChange(...)`, was unverändert weiterläuft, da der Wrapper exakt dieselbe Signatur und dasselbe Payload-Format beibehält.
 - Kein neuer Abhängigkeits-Bedarf: `class X extends EventTarget` ist in allen evergreen Browsern (Chrome/Firefox/Safari 14+) nativ unterstützt, kein Polyfill nötig (KISS-Vorgabe bleibt erfüllt).
 
 ## Positive Consequences
