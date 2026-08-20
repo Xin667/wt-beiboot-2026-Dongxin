@@ -1,0 +1,47 @@
+name: Deploy (Tests + GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Erlaubt der Deploy-Job das Schreiben von Pages-Artefakten und OIDC-Token.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  # Grundlegende CI-Checks. Es gibt keinen Build-Schritt (reine ES-Module,
+  # null npm-Dependencies) – der Syntax-Check plus die Unit-Tests sind der
+  # anwendbare Gate vor dem Deploy.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm run check
+      - run: npm test
+
+  deploy:
+    needs: test
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          # `src/` als Wurzel veröffentlichen: die Demo liegt dann unter /demo/,
+          # die Library unter /lib/ – die relativen ../lib/-Imports bleiben intakt.
+          path: src
+      - id: deployment
+        uses: actions/deploy-pages@v4
