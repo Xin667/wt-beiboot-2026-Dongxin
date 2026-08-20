@@ -31,13 +31,12 @@ test('OpenHandStable: erkennt offene, stabile Hand nach holdMs', () => {
   assert.equal(g.detect(hand, { timestamp: 201 }).detected, true); // held = 151 > 100
 });
 
-test('OpenHandStable: Grenzwert – genau holdMs zählt noch nicht (strikt >)', () => {
+test('OpenHandStable: Grenzwert – ab genau holdMs zählt (konsistent >= wie _stabilize)', () => {
   const g = new OpenHandStableGesture({ holdMs: 100, maxMovement: 0.015 });
   const hand = openHand();
   g.detect(hand, { timestamp: 0 });
   g.detect(hand, { timestamp: 50 });  // _stableStart = 50
-  assert.equal(g.detect(hand, { timestamp: 150 }).detected, false); // held = 100, nicht > 100
-  assert.equal(g.detect(hand, { timestamp: 151 }).detected, true);  // held = 101 > 100
+  assert.equal(g.detect(hand, { timestamp: 150 }).detected, true); // held = 100 >= 100
 });
 
 test('OpenHandStable: Bewegung über maxMovement setzt den Timer zurück', () => {
@@ -61,4 +60,25 @@ test('OpenHandStable: geschlossene Hand wird nicht erkannt', () => {
   });
   g.detect(closed, { timestamp: 0 });
   assert.equal(g.detect(closed, { timestamp: 50 }).detected, false);
+});
+
+test('OpenHandStable: Pinch-Haltung (Daumen nahe Zeigefinger) wird nicht erkannt', () => {
+  // Beim langsamen Pinch bleibt der Zeigefinger oft gestreckt – der Daumen
+  // wandert aber nah an die Zeigefingerspitze. Ohne den minThumbIndexDistance-
+  // Check würde die Hand während der Pinch-Anbahnung als "offen" gelten.
+  const g = new OpenHandStableGesture({ holdMs: 100, maxMovement: 0.015 });
+  const pinching = openHand();
+  pinching[4] = landmark(0.395, 0.3); // THUMB_TIP dicht an INDEX_TIP (0.4, 0.3)
+  pinching[3] = landmark(0.4, 0.4);   // THUMB_IP
+  g.detect(pinching, { timestamp: 0 });
+  assert.equal(g.detect(pinching, { timestamp: 50 }).detected, false);
+  assert.equal(g.detect(pinching, { timestamp: 200 }).detected, false);
+});
+
+test('OpenHandStable: minThumbIndexDistance ist konfigurierbar', () => {
+  const g = new OpenHandStableGesture({ holdMs: 0, maxMovement: 0.015, minThumbIndexDistance: 0.6 });
+  const hand = openHand();
+  // thumb-index Distanz ist hier hypot(0.4, 0.3) ≈ 0.5 < 0.6 → gilt als Pinch
+  g.detect(hand, { timestamp: 0 });
+  assert.equal(g.detect(hand, { timestamp: 50 }).detected, false);
 });
