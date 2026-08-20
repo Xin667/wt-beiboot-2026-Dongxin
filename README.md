@@ -4,17 +4,26 @@ Begleitprojekt zum Modul Web Technologies. Das Projekt wird von Issue zu Issue w
 
 Ziel ist die browserbasierte Erfassung und Verarbeitung von Körperdaten (Hand- und Gesichtsbewegungen) über die Kamera – sowie die Steuerung von Interaktionen durch Gestenerkennung.
 
+## Forschungsfrage
+
+Wie lässt sich Körperdaten-Erkennung (MediaPipe Hands) so als **native Browser-Events** abstrahieren, dass eine beliebige Web-Anwendung Gesten mit einem simplen `addEventListener` nutzen kann – ohne die ML-Rohdaten selbst verarbeiten zu müssen? Vollständiger Kontext: [`PROJECT.md`](PROJECT.md).
+
 ## Team
 Author: [Dongxin Wang](https://github.com/Xin667)
 Reviewer: [Christian Noss](https://github.com/cnoss)
+
+## Voraussetzungen
+
+- **Node.js >= 18.13** – wird nur für die Tests benötigt; die Library selbst hat **null npm-Abhängigkeiten**.
+- **Kein Lockfile** – da keine Dependencies installiert werden (bewusste KISS-Entscheidung), existiert kein `package-lock.json`. `npm test` nutzt ausschließlich Node-Bordmittel (`node:test`).
 
 ## Start Demo
 
 Keine Installation notwendig. Die Anwendung läuft direkt im Browser.
 
 1. Repository klonen
-2. In `./src/demo/index.html` mit z.B VS Code "Go Live" starten
-3. Kamerazugriff von der Browser erlauben
+2. Lokalen Webserver im Projektstamm starten – entweder VS Code "Go Live" auf `src/demo/index.html`, oder headless: `npx serve src` (Demo dann unter `http://localhost:3000/demo/`)
+3. Kamerazugriff vom Browser erlauben
 
 > Ein lokaler Webserver ist notwendig, da MediaPipe die Modelldateien per HTTP lädt. Das direkte Öffnen der Datei im Browser funktioniert nicht.
 
@@ -26,6 +35,27 @@ Eigenständige Anwendung, die die Library ausschließlich über ihre öffentlich
 2. Kamerazugriff erlauben
 
 Details und Reflexion: `docs/issue4/`.
+
+## Tests
+
+```bash
+npm test        # 38 Unit-Tests (node:test), keine Dependencies nötig
+npm run check   # Syntax-Check aller Source-Dateien (node --check)
+```
+
+Die Tests decken pro Geste Positiv-, Negativ- und Grenzfälle ab. Der Pinch-Jitter-Test (`test/library-pinch-jitter.test.js`) zählt `gesturestart`-Flanken bei oszillierender Distanz und liefert die Messung vorher/nachher für ADR 0007.
+
+## Deployment (GitHub Pages)
+
+Die Demo wird über GitHub Actions auf GitHub Pages veröffentlicht:
+
+- **Public URL:** `https://xin667.github.io/wt-beiboot-2026-Dongxin/` (Demo unter `/demo/`)
+- **Workflow:** `.github/workflows/deploy.yml` – bei Push auf `main` laufen `npm run check` + `npm test`, danach wird `src/` als Pages-Artefakt veröffentlicht (relative `../lib/`-Imports bleiben dadurch intakt).
+- **Einmalige Voraussetzung:** in den Repo-Settings **Settings → Pages → Source: GitHub Actions** wählen.
+
+## Video
+
+> ⏳ Platzhalter – Link zur Video-Demo folgt nach dem Upload.
 
 ## Einführung in die Library
 
@@ -70,7 +100,8 @@ function onResults(handResults) {
 - Utilities aus `utils/landmarks.js` – `LM`, `distance2D`, `isFingerCurled`, `isFingerExtended`
 
 **Intern** (Implementierungsdetails, `_`-Präfix):
-- `_gestures`, `_listeners`, `_activeStart`, `_emitChanges()` etc.
+- `_gestures`, `_activeStart`, `_emitChanges()` etc.
+- `BaseGesture._stabilize()` – gemeinsame Halte-Stabilisierung (ADR 0007)
 - Routing-Logik in `update()` (handCount-Weiche, exclusive-Auswertung)
 - Zustandsvariablen einzelner Gesten (`_lastWristPos`, `_stableStart`, `_lastDist`)
 
@@ -167,6 +198,7 @@ new PinchGesture({ threshold: 0.04 })
 | Option | Default | Beschreibung |
 |---|---|---|
 | `threshold` | `0.04` | Max. Distanz LM4 ↔ LM8 (aus ADR 0003) |
+| `holdMs` | `150` | Mindest-Haltedauer unter der Schwelle (ADR 0007) |
 
 ### PeaceGesture
 
@@ -290,7 +322,7 @@ src/
 
 ## Branches
 
-Vier Issues befinden sich in den vier Branches (`feature/issue-1` … `feature/issue-4`).
+Fünf Issues befinden sich in den fünf Branches (`feature/issue-1` … `feature/issue-5`).
 
 ## Decision Records
 
