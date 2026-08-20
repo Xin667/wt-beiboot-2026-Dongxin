@@ -26,7 +26,6 @@ export class ThumbsDownGesture extends BaseGesture {
   constructor(options = {}) {
     super();
     this._holdMs = options.holdMs ?? 250;
-    this._activeStart = null;
   }
 
   get name() { return 'thumbs-down'; }
@@ -47,23 +46,13 @@ export class ThumbsDownGesture extends BaseGesture {
       thumbTipY > hand[LM.RING_TIP].y   &&
       thumbTipY > hand[LM.PINKY_TIP].y;
 
-    const rawDetected = thumbExtendedDown && thumbIsLowest;
+    const stable = this._stabilize(thumbExtendedDown && thumbIsLowest, now, this._holdMs);
+    if (!stable) return { detected: false, confidence: 0 };
 
-    if (rawDetected) {
-      if (this._activeStart === null) this._activeStart = now;
-      const held = now - this._activeStart;
-      return {
-        detected: held >= this._holdMs,
-        confidence: held >= this._holdMs ? 0.9 : 0.3,
-        data: { heldMs: held },
-      };
-    }
-
-    this._activeStart = null;
-    return { detected: false, confidence: 0 };
-  }
-
-  reset() {
-    this._activeStart = null;
+    return {
+      detected: stable.detected,
+      confidence: stable.detected ? 0.9 : 0.3,
+      data: { heldMs: stable.heldMs },
+    };
   }
 }

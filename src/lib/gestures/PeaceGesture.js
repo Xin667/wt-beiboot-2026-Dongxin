@@ -31,7 +31,6 @@ export class PeaceGesture extends BaseGesture {
   constructor(options = {}) {
     super();
     this._holdMs = options.holdMs ?? 400;
-    this._activeStart = null;
   }
 
   get name() { return 'peace'; }
@@ -53,26 +52,14 @@ export class PeaceGesture extends BaseGesture {
     // Die Kombination Index+Middle gestreckt + Ring+Pinky eingeklappt ist
     // bereits ausreichend eindeutig.
 
-    const rawDetected = indexUp && middleUp && ringDown && pinkyDown;
-
     // Stabilisierung
-    if (rawDetected) {
-      if (this._activeStart === null) this._activeStart = now;
-      const held = now - this._activeStart;
-      const stable = held >= this._holdMs;
+    const stable = this._stabilize(indexUp && middleUp && ringDown && pinkyDown, now, this._holdMs);
+    if (!stable) return { detected: false, confidence: 0 };
 
-      return {
-        detected: stable,
-        confidence: stable ? 0.9 : Math.min(0.4, held / this._holdMs * 0.4),
-        data: { heldMs: held },
-      };
-    }
-
-    this._activeStart = null;
-    return { detected: false, confidence: 0 };
-  }
-
-  reset() {
-    this._activeStart = null;
+    return {
+      detected: stable.detected,
+      confidence: stable.detected ? 0.9 : Math.min(0.4, stable.heldMs / this._holdMs * 0.4),
+      data: { heldMs: stable.heldMs },
+    };
   }
 }
