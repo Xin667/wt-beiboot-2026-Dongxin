@@ -18,6 +18,15 @@ Keine Installation notwendig. Die Anwendung läuft direkt im Browser.
 
 > Ein lokaler Webserver ist notwendig, da MediaPipe die Modelldateien per HTTP lädt. Das direkte Öffnen der Datei im Browser funktioniert nicht.
 
+## Präsentations-Demo (Issue #4)
+
+Eigenständige Anwendung, die die Library ausschließlich über ihre öffentliche API nutzt: eine gestengesteuerte Slide-Präsentation (✌️ Peace = Aufwecken, 👍 ThumbsUp = weiter, 👎 ThumbsDown = zurück; Pfeiltasten/„W" als Keyboard-Fallback).
+
+1. `./src/presentation/index.html` mit z.B. VS Code "Go Live" starten
+2. Kamerazugriff erlauben
+
+Details und Reflexion: `docs/issue4/`.
+
 ## Einführung in die Library
 
 ```js
@@ -54,7 +63,8 @@ function onResults(handResults) {
 ## Öffentliche vs. interne API
 
 **Öffentlich** (stabil, dokumentiert, für Nutzer der Library):
-- `GestureLibrary` – Instanziierung, `register()`, `update()`, `onGesture()`, `onChange()`, `getActiveGestures()`, `getLastResult()`
+- `GestureLibrary` – Instanziierung, `register()`, `unregister()`, `getRegisteredGestures()`, `getGesture()`, `update()`, `getActiveGestures()`, `getLastResult()`, `resetAll()`, `dispose()`
+- `GestureLibrary` erbt von `EventTarget` (siehe ADR 0006): `addEventListener()`/`removeEventListener()` mit den Events `gesture`/`gesturestart`/`gestureend` (Details unten). `onGesture()`/`onChange()` bleiben als Convenience-Wrapper erhalten.
 - `BaseGesture` – Basisklasse zum Erweitern für eigene Gesten
 - Alle eingebauten Gesten (`ThumbsUpGesture`, `PinchGesture`, etc.) – Konstruktor-Optionen
 - Utilities aus `utils/landmarks.js` – `LM`, `distance2D`, `isFingerCurled`, `isFingerExtended`
@@ -85,13 +95,34 @@ Folgende Methoden wurden implementiert:
 | Methode | Beschreibung |
 |---|---|
 | `register(gesture)` | Geste registrieren. Reihenfolge = Priorität. Chaining möglich. |
+| `unregister(name)` | Geste entfernen (`boolean`). |
+| `getRegisteredGestures()` | Namen aller registrierten Gesten (`string[]`). |
+| `getGesture(name)` | Registrierte Gesten-Instanz (`BaseGesture\|undefined`). |
 | `update(landmarks, meta?)` | Alle Gesten auswerten. `landmarks` = `handResults.landmarks` von MediaPipe. |
 | `getActiveGestures()` | Namen der aktuell erkannten Gesten (`string[]`). |
 | `getLastResult(name)` | Letztes Ergebnis einer Geste (`{detected, confidence, data}`). |
-| `onGesture(callback)` | Callback bei jeder erkannten Geste. Gibt Unsubscribe-Funktion zurück. |
-| `onChange(callback)` | Callback bei Start/Ende einer Geste (`{type: 'start'\|'end', gesture}`). |
+| `onGesture(callback)` | Convenience-Wrapper um das `'gesture'`-Event. Gibt Unsubscribe-Funktion zurück. |
+| `onChange(callback)` | Convenience-Wrapper um `'gesturestart'`/`'gestureend'` (`{type: 'start'\|'end', gesture}`). |
 | `resetAll()` | Alle Gesten zurücksetzen (wenn keine Hand erkannt wird). |
-| `dispose()` | Alle Gesten und Listener entfernen. |
+| `dispose()` | Alle Gesten entfernen. |
+
+### Events (EventTarget)
+
+`GestureLibrary` erbt von `EventTarget` (seit ADR 0006). Ereignisse lassen sich wie bei jedem nativen DOM-Objekt mit `addEventListener()` abonnieren:
+
+| Event | `detail` | Feuert |
+|---|---|---|
+| `gesture` | `{gesture: string, result: object}` | jeden Frame bei Erkennung (entspricht `onGesture`) |
+| `gesturestart` | `{gesture: string, result: object}` | beim Übergang zu erkannt (entspricht `onChange({type:'start'})`) |
+| `gestureend` | `{gesture: string}` | beim Übergang zu nicht mehr erkannt (entspricht `onChange({type:'end'})`) |
+
+```js
+lib.addEventListener('gesturestart', (e) => {
+  console.log(`${e.detail.gesture} gestartet`, e.detail.result);
+});
+```
+
+`onGesture()`/`onChange()` bleiben als abwärtskompatible Convenience-Wrapper erhalten (intern implementiert über `addEventListener`).
 
 ---
 
@@ -250,12 +281,16 @@ src/
 ├── demo/                             ← Demo-Anwendung
 │   ├── index.html
 │   └── app.js
+├── presentation/                     ← Issue #4: Präsentations-Demo (nur öffentliche API)
+│   ├── index.html
+│   ├── app.js
+│   └── slides.js
 ```
 
 
 ## Branches
 
-Drei Issues befinden sich in den drei Branches.
+Vier Issues befinden sich in den vier Branches (`feature/issue-1` … `feature/issue-4`).
 
 ## Decision Records
 
