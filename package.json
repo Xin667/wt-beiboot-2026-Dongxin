@@ -1,0 +1,15 @@
+{
+  "name": "body-gesture-lib",
+  "version": "1.0.0",
+  "description": "Browserbasierte Gestenerkennung mit MediaPipe Hands – Körperdaten als Custom Browser Events.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/lib/index.js && node --check src/lib/BaseGesture.js && node --check src/lib/GestureLibrary.js && node --check src/lib/gestures/ThumbsUpGesture.js && node --check src/lib/gestures/ThumbsDownGesture.js && node --check src/lib/gestures/PeaceGesture.js && node --check src/lib/gestures/PinchGesture.js && node --check src/lib/gestures/OpenHandStableGesture.js && node --check src/lib/gestures/TwoHandZoomGesture.js && node --check src/lib/utils/landmarks.js && node --check src/demo/app.js && node --check src/presentation/app.js && node --check src/presentation/slides.js"
+  },
+  "engines": {
+    "node": ">=18.13"
+  },
+  "license": "MIT"
+}
