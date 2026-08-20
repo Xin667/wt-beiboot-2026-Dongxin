@@ -1,7 +1,9 @@
-Einarbeitung in MediaPipe API: 4 Stunden
+# Time Tracking – Issue 1
 
-Implementierung Hand-Tracking: 2 Stunden
-
-Debugging (Spiegelung & Absturz): 2 Stunden
-
-Dokumentierung: 2 Stunden
+| Aufgabe | Zeit |
+| :--- | :--- |
+| Einarbeitung in MediaPipe API | 4h |
+| Implementierung Hand-Tracking | 2h |
+| Debugging (Spiegelung & Absturz) | 2h |
+| Dokumentation (ADRs) | 2h |
+| **Gesamt** | **10h** |
