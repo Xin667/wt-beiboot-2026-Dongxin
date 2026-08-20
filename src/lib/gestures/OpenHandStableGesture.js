@@ -20,11 +20,15 @@ export class OpenHandStableGesture extends BaseGesture {
    * @param {object} [options]
    * @param {number} [options.holdMs=1500] – Mindest-Haltedauer
    * @param {number} [options.maxMovement=0.015] – Max. Handgelenkbewegung pro Frame
+   * @param {number} [options.minThumbIndexDistance=0.05] – Mindestabstand zwischen
+   *        Daumen- und Zeigefingerspitze. Verhindert, dass eine (langsame)
+   *        Pinch-Bewegung als „offene Hand" erkannt wird (ADR 0007, Update).
    */
   constructor(options = {}) {
     super();
     this._holdMs = options.holdMs ?? 1500;
     this._maxMovement = options.maxMovement ?? 0.015;
+    this._minThumbIndexDistance = options.minThumbIndexDistance ?? 0.05;
     this._lastWristPos = null;
     this._stableStart = 0;
   }
@@ -42,14 +46,21 @@ export class OpenHandStableGesture extends BaseGesture {
       isFingerExtended(hand, LM.MIDDLE_TIP, LM.MIDDLE_MCP) &&
       isFingerExtended(hand, LM.RING_TIP,   LM.RING_MCP);
 
-    // Bedingung 2: Handgelenk bewegt sich kaum
+    // Bedingung 2: Daumen ist NICHT zur Zeigefingerspitze geführt.
+    // Beim (langsamen) Pinch bleibt der Zeigefinger oft gestreckt – ohne
+    // diese Bedingung würde die Hand in der Pinch-Anbahnung als "offen"
+    // gelten und OpenHandStable auslösen (ADR 0007, Update).
+    const notPinching =
+      distance2D(hand[LM.THUMB_TIP], hand[LM.INDEX_TIP]) > this._minThumbIndexDistance;
+
+    // Bedingung 3: Handgelenk bewegt sich kaum
     let isStable = false;
     if (this._lastWristPos) {
       const moveDist = distance2D(wrist, this._lastWristPos);
 
-      if (moveDist < this._maxMovement && isOpen) {
+      if (moveDist < this._maxMovement && isOpen && notPinching) {
         if (this._stableStart === 0) this._stableStart = now;
-        if (now - this._stableStart > this._holdMs) {
+        if (now - this._stableStart >= this._holdMs) {
           isStable = true;
         }
       } else {

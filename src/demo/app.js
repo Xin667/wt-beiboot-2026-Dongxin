@@ -280,7 +280,6 @@ function updateGestureOverlay() {
 function renderGestureChips() {
   gestureChips.innerHTML = '';
   for (const name of lib.getRegisteredGestures()) {
-    const gesture = lib.getGesture(name);
     const chip = document.createElement('span');
     chip.className = 'gesture-chip';
     chip.id = `chip-${name}`;
