@@ -8,12 +8,16 @@
 | ADR 0007 | 1h |
 | CI-Workflow (GitHub Actions) + Pages-Konfiguration | 1.5h |
 | Repo-Compliance (LICENSE, THIRD_PARTY_LICENSES, Chat-Protokoll, README, CONTRIBUTING) | 2h |
+| Nacharbeit: ESLint + Library-Integrationstests (49 Tests) + Grenzwert-Angleichung | 2h |
+| Nacharbeit: OpenHandStable vs. Pinch-Konflikt (minThumbIndexDistance) | 1.5h |
 | Video (Dreh & Upload) | 3h |
 | Zeittracking & Reflexion | 0.5h |
-| **Gesamt** | **14h** |
+| **Gesamt** | **17.5h** |
 
 ## Reflexion
 
 Der eigentliche Fix war klein – die meiste Zeit ging in den Nachweis. Dass Pinch als einzige Geste ohne Halte-Stabilisierung auskam, war aus dem Code sofort ersichtlich; aber der Anspruch von Issue 5 (Begründung A/B, harte Vorher/Nachher-Zahlen, Tests, Deployment) verlangt, die Beobachtung aus `friction-notes.md` in einen reproduzierbaren Test zu übersetzen. Das war der wertvollste Teil: Erst der Pinch-Jitter-Test, der `gesturestart`-Flanken zählt, macht aus „es flackert" eine belastbare Zahl (Rauschen 4→0, Halten 2→1 Flanken).
 
 Wichtig war außerdem, die Duplikation ehrlich zu benennen statt dem Plan blind zu folgen: Nur drei Gesten teilten die `_activeStart`-Logik wortgleich, nicht fünf. Die Extraktion auf die kontinuierliche Halte-Familie zu begrenzen (statt `OpenHandStable` und `TwoHandZoom` mit anderen Halte-Semantiken durch eine Methode zu zwingen) war die richtige Abgrenzung – dokumentiert in ADR 0007.
+
+Der echte Webcam-Test der stabilisierten Version brachte zwei Folge-Befunde, die nur die Realnutzung hätte zeigen können: OpenHandStable konkurrierte während langsamer Pinch-Bewegungen (der Zeigefinger bleibt beim Pinch oft gestreckt – die "offene Hand"-Bedingung war trotz Pinch-Haltung erfüllt). Der Fix (`minThumbIndexDistance`-Bedingung) war kleiner als befürchtet, aber nur per Kamera auffindbar – ein weiteres Argument, echte Gerätetests früh einzuplanen. Zusätzlich wurde die ESLint-Struktur (devDependency) nachgezogen, um die Stufe-2-Anforderung "Statische Codeanalyse automatisiert" zu erfüllen – dadurch existiert jetzt ein Lockfile, das die devDependency-Version fixiert.

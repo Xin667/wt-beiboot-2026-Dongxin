@@ -21,12 +21,15 @@ Pro Eintrag: **was** erstellt wurde, **von wem** (Werkzeug) und **Status der men
 | Umsetzungsplan (DeepSeek + Claude synthetisiert) | DeepSeek, Claude | – (Ausgangspunkt) |
 | `src/lib/BaseGesture.js` (`_stabilize`) | ZCode | ⏳ ausstehend |
 | Refactoring `ThumbsUp`/`ThumbsDown`/`Peace`/`Pinch` | ZCode | ⏳ ausstehend |
-| `test/*` (38 Unit-Tests inkl. Jitter-Messung) | ZCode | ⏳ ausstehend |
+| `test/*` (51 Unit-Tests inkl. Jitter-Messung) | ZCode | ⏳ ausstehend |
 | `docs/issue5/0007-*.md` (ADR) | ZCode | ⏳ ausstehend |
 | `.github/workflows/deploy.yml`, `package.json` | ZCode | ⏳ ausstehend |
 | `LICENSE`, `THIRD_PARTY_LICENSES.md`, `CONTRIBUTING.md`, README-Update | ZCode | ⏳ ausstehend |
+| Nacharbeit: ESLint (devDependency), `library.test.js`, Grenzwert-Angleichung, OpenHandStable-vs-Pinch-Fix | ZCode | ⏳ ausstehend |
 
 **Korrektur des Plans durch den Menschen/Agenten:** Der Ausgangsplan ging von „5 Gesten mit wortgleich duplizierter holdMs-Logik" aus. Bei der Umsetzung zeigte sich, dass nur **drei** Gesten (`ThumbsUp`, `ThumbsDown`, `Peace`) die `_activeStart`-Logik wortgleich teilen; `OpenHandStable` (stabilitäts-gated) und `TwoHandZoom` (Latching) haben abweichende Halte-Semantik. Die Extraktion wurde deshalb auf die kontinuierliche Halte-Familie begrenzt – dokumentiert in ADR 0007.
+
+**Folge-Befunde aus dem Webcam-Test** (dokumentiert in ADR 0007, Update): OpenHandStable konkurrierte während langsamer Pinch-Bewegungen; Fix über `minThumbIndexDistance` (Eingabe/Beobachtung vom Autor, Implementierung ZCode). Außerdem wurden ESLint (Stufe-2-Kriterium „Statische Codeanalyse automatisiert") und ein Library-Integrationstest (`library.test.js`) ergänzt.
 
 ## Hinweis
 

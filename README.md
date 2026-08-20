@@ -14,8 +14,8 @@ Reviewer: [Christian Noss](https://github.com/cnoss)
 
 ## Voraussetzungen
 
-- **Node.js >= 18.13** – wird nur für die Tests benötigt; die Library selbst hat **null npm-Abhängigkeiten**.
-- **Kein Lockfile** – da keine Dependencies installiert werden (bewusste KISS-Entscheidung), existiert kein `package-lock.json`. `npm test` nutzt ausschließlich Node-Bordmittel (`node:test`).
+- **Node.js >= 18.13**
+- **Zur Laufzeit null npm-Abhängigkeiten.** Die Library (`src/lib/`) ist reines ES-Module-JavaScript und läuft direkt im Browser – MediaPipe wird zur Laufzeit aus dem CDN geladen (Version per URL fixiert). `npm install` wird nur für die Entwicklungswerkzeuge (ESLint) benötigt; dadurch existiert ein `package-lock.json`, das die devDependency-Version fixiert.
 
 ## Start Demo
 
@@ -27,6 +27,12 @@ Keine Installation notwendig. Die Anwendung läuft direkt im Browser.
 
 > Ein lokaler Webserver ist notwendig, da MediaPipe die Modelldateien per HTTP lädt. Das direkte Öffnen der Datei im Browser funktioniert nicht.
 
+### Demo-Funktionen
+
+- **Mode-Auswahl** (`Hands & Face (Both)` / `Hands Only` / `Face Only`): schaltet zwischen Hand- und Gesichtserkennung um.
+- **Recording/Export:** „Start Recording" sammelt die rohen Landmark-Daten pro Frame; „Download JSON" exportiert sie. Die Daten dienten in Issue #2 zum iterativen Kalibrieren der Schwellenwerte (ADR 0003) und bleiben als Debug-/Datenerfassungswerkzeug erhalten.
+- **Face-Tracking** ist bewusst reine Visualisierung (Skelett + Daten-Export) und treibt keine Geste an. `PROJECT.md` nennt Gesichtsbewegungen als Teil der Körperdaten, die Gestenerkennung der Library arbeitet aber ausschließlich mit Hand-Landmarks – der Face-Modus zeigt die zusätzlich erfasste Modalität.
+
 ## Präsentations-Demo (Issue #4)
 
 Eigenständige Anwendung, die die Library ausschließlich über ihre öffentliche API nutzt: eine gestengesteuerte Slide-Präsentation (✌️ Peace = Aufwecken, 👍 ThumbsUp = weiter, 👎 ThumbsDown = zurück; Pfeiltasten/„W" als Keyboard-Fallback).
@@ -36,10 +42,11 @@ Eigenständige Anwendung, die die Library ausschließlich über ihre öffentlich
 
 Details und Reflexion: `docs/issue4/`.
 
-## Tests
+## Tests & Lint
 
 ```bash
-npm test        # 38 Unit-Tests (node:test), keine Dependencies nötig
+npm test        # 38 Unit-Tests (node:test)
+npm run lint    # ESLint – statische Analyse (keine Style-Regeln, nur echte Fehler)
 npm run check   # Syntax-Check aller Source-Dateien (node --check)
 ```
 
@@ -50,7 +57,7 @@ Die Tests decken pro Geste Positiv-, Negativ- und Grenzfälle ab. Der Pinch-Jitt
 Die Demo wird über GitHub Actions auf GitHub Pages veröffentlicht:
 
 - **Public URL:** `https://xin667.github.io/wt-beiboot-2026-Dongxin/` (Demo unter `/demo/`)
-- **Workflow:** `.github/workflows/deploy.yml` – bei Push auf `main` laufen `npm run check` + `npm test`, danach wird `src/` als Pages-Artefakt veröffentlicht (relative `../lib/`-Imports bleiben dadurch intakt).
+- **Workflow:** `.github/workflows/deploy.yml` – bei Push auf `main` laufen `npm ci` + `npm run lint` + `npm run check` + `npm test` (jeder Schritt ist ein Deploy-Gate), danach wird `src/` als Pages-Artefakt veröffentlicht (relative `../lib/`-Imports bleiben dadurch intakt).
 - **Einmalige Voraussetzung:** in den Repo-Settings **Settings → Pages → Source: GitHub Actions** wählen.
 
 ## Video
@@ -226,6 +233,7 @@ new OpenHandStableGesture({ holdMs: 1500, maxMovement: 0.015 })
 |---|---|---|
 | `holdMs` | `1500` | Mindest-Haltedauer |
 | `maxMovement` | `0.015` | Max. Handgelenkbewegung pro Frame |
+| `minThumbIndexDistance` | `0.05` | Min. Abstand Daumen ↔ Zeigefingerspitze – verhindert, dass eine langsame Pinch-Bewegung als „offene Hand" erkannt wird |
 
 ### TwoHandZoomGesture
 

@@ -52,6 +52,16 @@ Gewählt: **Option B**, bewusst begrenzt auf die *kontinuierliche Halte-Semantik
 * **Bewusst *nicht* vereinheitlicht:** `OpenHandStableGesture` (Stabilitäts-gated) und `TwoHandZoomGesture` (Latching) behalten ihre eigene Halte-Logik. Sie durch `_stabilize()` zu zwingen hätte ihr Verhalten geändert oder die Methode überladen – unverhältnismäßig für den eigentlichen Fix.
 * **`_stabilize()`-Vertrag:** Rückgabe `null` für "kein Rohsignal" ist ein leicht nicht-offensichtlicher Vertrag; er ist im JSDoc dokumentiert und bleibt `_`-gekennzeichnet intern.
 
+## Update (2026-08-20): Folge-Befunde nach Webcam-Test
+
+Zwei unabhängige Folge-Befunde wurden nach dem ersten Webcam-Test der stabilisierten Version behoben:
+
+**1. OpenHandStable löste während langsamer Pinch-Bewegungen aus.** Beim langsamen Zusammenführen bleibt der Zeigefinger oft gestreckt (`tip.y < mcp.y`), sodass die Bedingung „Hand ist offen" erfüllt ist, während der Daumen schon Richtung Zeigefinger wandert. Bei stabiler Hand (Wrist-Bewegung klein) zählte OpenHandStable dadurch die Pinch-Anbahnung als „offen und stabil" und startete konkurrierend. Fix: `OpenHandStableGesture` prüft zusätzlich `minThumbIndexDistance` (Default 0.05) zwischen Daumen- und Zeigefingerspitze – eine Pinch-Haltung ist keine offene Hand.
+
+**2. Grenzwert-Inkonsistenz zwischen `_stabilize()` und `OpenHandStableGesture`.** `_stabilize()` kippt bei `heldMs >= holdMs`, `OpenHandStableGesture` nutzte `>`. Die strikt-größer-Variante ist jetzt angeglichen (`>=`), sodass alle Halte-Gesten dieselbe Grenzwert-Semantik haben (1 ms Differenz, aber konsistente Verträge).
+
+Beide Fixes sind durch zusätzliche Unit-Tests abgedeckt (51 Tests gesamt). Kein Breaking Change an der öffentlichen API.
+
 ## Links
 
 * `docs/issue4/friction-notes.md` – Ursprungsbeobachtung (Pinch-Flackern im Event-Log)
