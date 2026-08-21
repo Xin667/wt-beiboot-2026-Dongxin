@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gesten-Synthesizer (Issue 5)</title>
+  <style>
+    :root {
+      --font-sans: system-ui, -apple-system, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+      --bg: #0a0a0a;
+      --card: #131311;
+      --line: #2a2a26;
+      --text: #e8e8e3;
+      --text-strong: #f2f2ee;
+      --muted: #8a8a85;
+      --faint: #6a6a65;
+      --green: #7ee787;
+      --green-bg: #1a2e1a;
+    }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-sans); min-height: 100vh; }
+    .wrap { max-width: 780px; margin: 0 auto; padding: 24px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 8px; }
+    h1 { font-size: 22px; font-weight: 500; color: var(--text-strong); margin: 0 0 6px; }
+    .sub { font-size: 13px; color: var(--muted); margin: 0; max-width: 420px; line-height: 1.6; }
+    .toolbar { display: flex; gap: 8px; flex-shrink: 0; }
+    button { background: transparent; border: 1px solid #333; color: var(--muted); padding: 8px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    button:hover:not(:disabled) { border-color: var(--green); color: var(--green); }
+    button.primary { background: var(--green-bg); border-color: var(--green); color: var(--green); font-weight: 500; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .status { font-size: 12px; color: var(--muted); font-family: var(--font-mono); margin-bottom: 16px; }
+
+    .main { display: grid; grid-template-columns: 1fr 220px; gap: 16px; margin-bottom: 16px; }
+    .gesture-card { background: var(--card); border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 20px; }
+    .badge { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 28px; background: var(--green-bg); }
+    .g-label { font-size: 11px; letter-spacing: 0.06em; color: var(--faint); text-transform: uppercase; margin-bottom: 4px; }
+    .g-value { font-size: 20px; font-weight: 500; color: var(--text-strong); font-family: var(--font-mono); }
+    .g-mode { font-size: 11px; color: var(--faint); margin-top: 4px; font-family: var(--font-mono); }
+    #wave { flex-shrink: 0; }
+    .cam-card { background: var(--card); border-radius: 12px; overflow: hidden; position: relative; min-height: 130px; }
+    .cam-card video, .cam-card canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .cam-card video { transform: scaleX(-1); }
+
+    .values { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .card { background: var(--card); border-radius: 12px; padding: 14px 16px; }
+    .label { font-size: 11px; letter-spacing: 0.06em; color: var(--faint); text-transform: uppercase; margin-bottom: 6px; }
+    .value { font-size: 18px; font-weight: 500; font-family: var(--font-mono); }
+    .note-bars { display: flex; gap: 3px; align-items: flex-end; height: 20px; margin-top: 8px; }
+    .note-bars i { flex: 1; background: var(--line); height: 40%; border-radius: 2px; }
+    .note-bars i.on { background: var(--green); height: 100%; }
+
+    .layers { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .chip { background: transparent; border: 1px solid #333; color: var(--faint); padding: 8px 16px; border-radius: 20px; font-size: 13px; }
+    .chip.active { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    td { padding: 10px 0; border-bottom: 1px solid #1a1a17; }
+    td.g { color: var(--green); font-family: var(--font-mono); width: 35%; }
+    td.f { color: #c8c8c2; }
+    tr:first-child td { color: var(--muted); border-bottom: 1px solid #222; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1>Gesten-Synthesizer</h1>
+        <p class="sub">Steuerung eines Web-Audio-Synths per Handgesten. Verarbeitung läuft lokal im Browser.</p>
+      </div>
+      <div class="toolbar">
+        <button id="btn-start" class="primary">Start</button>
+        <button id="btn-stop" disabled>Stop</button>
+      </div>
+    </div>
+    <div class="status" id="status">Noch nicht gestartet</div>
+
+    <div class="main">
+      <div class="gesture-card">
+        <div class="badge" id="badge">✋</div>
+        <div style="flex:1;min-width:0">
+          <div class="g-label">Aktuelle Geste</div>
+          <div class="g-value" id="last-gesture">–</div>
+          <div class="g-mode" id="mode">–</div>
+        </div>
+        <canvas id="wave" width="260" height="60"></canvas>
+      </div>
+      <div class="cam-card">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="skeleton"></canvas>
+      </div>
+    </div>
+
+    <div class="values">
+      <div class="card">
+        <div class="label">Solo-Note</div>
+        <div class="value" id="note" style="color:var(--green);margin-bottom:8px">–</div>
+        <div class="note-bars" id="note-bars"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="card">
+        <div class="label">Lautstärke</div>
+        <div class="value" id="volume">80 %</div>
+      </div>
+    </div>
+
+    <div class="layers">
+      <span class="chip" id="chip-track">▶ Track (peace)</span>
+      <span class="chip" id="chip-pad">♪ Pad (open-hand-stable)</span>
+    </div>
+
+    <table>
+      <tr><td>Geste</td><td>Funktion</td></tr>
+      <tr><td class="g">peace</td><td class="f">Backing-Track an/aus</td></tr>
+      <tr><td class="g">thumbs-up / thumbs-down</td><td class="f">Solo-Ton (Pentatonik)</td></tr>
+      <tr><td class="g">open-hand-stable</td><td class="f">Pad an/aus (1.5 s halten)</td></tr>
+      <tr><td class="g">two-hand-zoom</td><td class="f">Lautstärke</td></tr>
+    </table>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
