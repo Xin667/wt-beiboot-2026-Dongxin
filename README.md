@@ -42,10 +42,25 @@ Eigenständige Anwendung, die die Library ausschließlich über ihre öffentlich
 
 Details und Reflexion: `docs/issue4/`.
 
+## Synthesizer-Demo (Issue 5)
+
+Dritte Demo-App: Ein Web-Audio-Synthesizer, der ausschließlich über die öffentliche Library-API gesteuert wird. Interaktionsmodell – die Handanzahl ist der Modus-Wechsel:
+
+- **1 Hand im Bild = Instrument:** `peace` = Backing-Track an/aus (A-Moll-Progression Am–F–C–G mit Bass und Drums als Looper), `thumbs-up`/`thumbs-down` = Solo-Töne (Pentatonik), `open-hand-stable` = Pad an/aus.
+- **2 Hände im Bild = Mixer:** Handabstand (`two-hand-zoom`) = Lautstärke.
+
+`peace` und `open-hand-stable` sind **Latching-Schalter**: Einmal getriggert läuft der Track/das Pad weiter, auch wenn die Hand das Bild verlässt – so lässt sich Schicht für Schicht eine ganze Musikaufstellung aufbauen. Die kontinuierlichen Parameter (Lautstärke) liest die App pro Frame über `lib.getLastResult(name).data` – der Data-Kanal der Library, neben den Event-Kanälen (`gesturestart`/`gestureend`).
+
+1. `./src/synth/index.html` mit z.B. VS Code "Go Live" starten
+2. Kamerazugriff erlauben und **Start** klicken (AudioContext wird im Klick erzeugt – Autoplay-Policy)
+3. `peace` zeigen, dann über 👍/👎 improvisieren
+
+> Deployed: `https://xin667.github.io/wt-beiboot-2026-Dongxin/synth/` (über die CI automatisch veröffentlicht)
+
 ## Tests & Lint
 
 ```bash
-npm test        # 38 Unit-Tests (node:test)
+npm test        # 51 Unit-Tests (node:test)
 npm run lint    # ESLint – statische Analyse (keine Style-Regeln, nur echte Fehler)
 npm run check   # Syntax-Check aller Source-Dateien (node --check)
 ```
@@ -325,6 +340,10 @@ src/
 │   ├── index.html
 │   ├── app.js
 │   └── slides.js
+├── synth/                            ← Issue #5: Gesten-Synthesizer (nur öffentliche API)
+│   ├── index.html
+│   ├── app.js
+│   └── audio.js
 ```
 
 

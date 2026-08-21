@@ -44,7 +44,7 @@ Gewählt: **Option B**, bewusst begrenzt auf die *kontinuierliche Halte-Semantik
   * Halte-Sequenz `[0.05, 0.035, 0.045, 0.038, 0.036, 0.034, 0.036, 0.035]`: **vorher 2 → nachher 1** Flanke.
 * **DRY:** Die zuvor dreifach duplizierte `_activeStart`-Logik existiert nur noch in `BaseGesture._stabilize()` (`grep -r "_activeStart" src/lib/` trifft nur noch `BaseGesture.js`).
 * **Open/Closed:** Neue Gesten mit kontinuierlicher Halte-Semantik erhalten die Stabilisierung über `_stabilize()` ohne eigenen Timer-Code.
-* **Kein Breaking Change:** Das Verhalten von `ThumbsUp`/`ThumbsDown`/`Peace`/`OpenHandStable`/`TwoHandZoom` ist unverändert (38 Unit-Tests decken Positiv-, Negativ- und Grenzfälle ab).
+* **Kein Breaking Change:** Das Verhalten von `ThumbsUp`/`ThumbsDown`/`Peace`/`OpenHandStable`/`TwoHandZoom` ist unverändert (51 Unit-Tests decken Positiv-, Negativ- und Grenzfälle ab).
 
 ## Negative Consequences
 
