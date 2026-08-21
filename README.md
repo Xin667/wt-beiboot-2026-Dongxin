@@ -1,5 +1,7 @@
 # Web Technologies // Body Data PoC
 
+![CI](https://github.com/Xin667/wt-beiboot-2026-Dongxin/actions/workflows/deploy.yml/badge.svg)
+
 Begleitprojekt zum Modul Web Technologies. Das Projekt wird von Issue zu Issue weiterentwickelt, wobei Fortschritte durch Code Reviews und Präsentationen begleitet werden.
 
 Ziel ist die browserbasierte Erfassung und Verarbeitung von Körperdaten (Hand- und Gesichtsbewegungen) über die Kamera – sowie die Steuerung von Interaktionen durch Gestenerkennung.
@@ -17,45 +19,118 @@ Reviewer: [Christian Noss](https://github.com/cnoss)
 - **Node.js >= 18.13**
 - **Zur Laufzeit null npm-Abhängigkeiten.** Die Library (`src/lib/`) ist reines ES-Module-JavaScript und läuft direkt im Browser – MediaPipe wird zur Laufzeit aus dem CDN geladen (Version per URL fixiert). `npm install` wird nur für die Entwicklungswerkzeuge (ESLint) benötigt; dadurch existiert ein `package-lock.json`, das die devDependency-Version fixiert.
 
-## Start Demo
+## Anwendungen im Überblick
 
-Keine Installation notwendig. Die Anwendung läuft direkt im Browser.
+Das Repository enthält eine Library (`src/lib/`) und **drei Anwendungen**, die sie nutzen. Die Library ist von den Anwendungen getrennt – siehe [Projektstruktur](#projektstruktur).
 
-1. Repository klonen
-2. Lokalen Webserver im Projektstamm starten – entweder VS Code "Go Live" auf `src/demo/index.html`, oder headless: `npx serve src` (Demo dann unter `http://localhost:3000/demo/`)
-3. Kamerazugriff vom Browser erlauben
+| Anwendung | Verzeichnis | Öffentliche URL | Zweck |
+|---|---|---|---|
+| **Tracking-Demo** | `src/demo/` | […/demo/](https://xin667.github.io/wt-beiboot-2026-Dongxin/demo/) | Rohdaten-Visualisierung, Debug & Recording (Entwicklungs-Werkbank) |
+| **Präsentations-App** | `src/presentation/` | […/presentation/](https://xin667.github.io/wt-beiboot-2026-Dongxin/presentation/) | Anwendungsbeispiel 1: gestengesteuerte Slides |
+| **Synthesizer-App** | `src/synth/` | […/synth/](https://xin667.github.io/wt-beiboot-2026-Dongxin/synth/) | Anwendungsbeispiel 2: Gesten steuern einen Web-Audio-Synthesizer |
 
-> Ein lokaler Webserver ist notwendig, da MediaPipe die Modelldateien per HTTP lädt. Das direkte Öffnen der Datei im Browser funktioniert nicht.
+**Einstieg:** Lokal `npx serve src` starten und `http://localhost:3000/` öffnen – die Startseite verlinkt alle drei Anwendungen (online gilt dasselbe: die Startseite liegt unter [https://xin667.github.io/wt-beiboot-2026-Dongxin/](https://xin667.github.io/wt-beiboot-2026-Dongxin/)). Keine Installation nötig; die Anwendungen laufen direkt im Browser.
 
-### Demo-Funktionen
+> Ein lokaler Webserver ist notwendig, da MediaPipe die Modelldateien per HTTP lädt. Das direkte Öffnen der HTML-Dateien im Browser funktioniert nicht.
+
+### Tracking-Demo (`src/demo/`)
+
+Die Entwicklungs-Werkbank: zeigt die rohen Landmark-Daten, das Hand- und Gesichts-Skelett und die erkannten Gesten live.
+
+1. Startseite öffnen (siehe oben) und **Demo** anklicken, oder direkt `./src/demo/index.html` mit VS Code „Go Live" starten
+2. Kamerazugriff vom Browser erlauben
+
+**Funktionen:**
 
 - **Mode-Auswahl** (`Hands & Face (Both)` / `Hands Only` / `Face Only`): schaltet zwischen Hand- und Gesichtserkennung um.
 - **Recording/Export:** „Start Recording" sammelt die rohen Landmark-Daten pro Frame; „Download JSON" exportiert sie. Die Daten dienten in Issue #2 zum iterativen Kalibrieren der Schwellenwerte (ADR 0003) und bleiben als Debug-/Datenerfassungswerkzeug erhalten.
 - **Face-Tracking** ist bewusst reine Visualisierung (Skelett + Daten-Export) und treibt keine Geste an. `PROJECT.md` nennt Gesichtsbewegungen als Teil der Körperdaten, die Gestenerkennung der Library arbeitet aber ausschließlich mit Hand-Landmarks – der Face-Modus zeigt die zusätzlich erfasste Modalität.
 
-## Präsentations-Demo (Issue #4)
+### Präsentations-App (`src/presentation/`)
 
-Eigenständige Anwendung, die die Library ausschließlich über ihre öffentliche API nutzt: eine gestengesteuerte Slide-Präsentation (✌️ Peace = Aufwecken, 👍 ThumbsUp = weiter, 👎 ThumbsDown = zurück; Pfeiltasten/„W" als Keyboard-Fallback).
+Anwendungsbeispiel 1 – nutzt die Library ausschließlich über ihre öffentliche API: eine gestengesteuerte Slide-Präsentation (✌️ Peace = Aufwecken, 👍 ThumbsUp = weiter, 👎 ThumbsDown = zurück).
 
-1. `./src/presentation/index.html` mit z.B. VS Code "Go Live" starten
+1. Startseite öffnen und **Präsentation** anklicken, oder direkt `./src/presentation/index.html` mit VS Code „Go Live" starten
 2. Kamerazugriff erlauben
 
 Details und Reflexion: `docs/issue4/`.
 
-## Synthesizer-Demo (Issue 5)
+### Synthesizer-App (`src/synth/`)
 
-Dritte Demo-App: Ein Web-Audio-Synthesizer, der ausschließlich über die öffentliche Library-API gesteuert wird. Interaktionsmodell – die Handanzahl ist der Modus-Wechsel:
+Anwendungsbeispiel 2 – ein Web-Audio-Synthesizer, der ausschließlich über die öffentliche Library-API gesteuert wird. Interaktionsmodell – die Handanzahl ist der Modus-Wechsel:
 
 - **1 Hand im Bild = Instrument:** `peace` = Backing-Track an/aus (A-Moll-Progression Am–F–C–G mit Bass und Drums als Looper), `thumbs-up`/`thumbs-down` = Solo-Töne (Pentatonik), `open-hand-stable` = Pad an/aus.
 - **2 Hände im Bild = Mixer:** Handabstand (`two-hand-zoom`) = Lautstärke.
 
 `peace` und `open-hand-stable` sind **Latching-Schalter**: Einmal getriggert läuft der Track/das Pad weiter, auch wenn die Hand das Bild verlässt – so lässt sich Schicht für Schicht eine ganze Musikaufstellung aufbauen. Die kontinuierlichen Parameter (Lautstärke) liest die App pro Frame über `lib.getLastResult(name).data` – der Data-Kanal der Library, neben den Event-Kanälen (`gesturestart`/`gestureend`).
 
-1. `./src/synth/index.html` mit z.B. VS Code "Go Live" starten
+1. Startseite öffnen und **Synthesizer** anklicken, oder direkt `./src/synth/index.html` mit VS Code „Go Live" starten
 2. Kamerazugriff erlauben und **Start** klicken (AudioContext wird im Klick erzeugt – Autoplay-Policy)
 3. `peace` zeigen, dann über 👍/👎 improvisieren
 
-> Deployed: `https://xin667.github.io/wt-beiboot-2026-Dongxin/synth/` (über die CI automatisch veröffentlicht)
+## Datenschutz
+
+Die Kamera-Bilder werden ausschließlich **lokal im Browser** verarbeitet: MediaPipe läuft als WASM direkt im Browser, die Modelle werden per CDN geladen. Es werden keine Bild- oder Landmark-Daten an Server übertragen oder gespeichert – das Schließen der Seite verwirft alle Daten.
+
+## Library-Nutzung
+
+Die Library ist ein reines ES-Modul-Paket (`src/lib/index.js`). Der komplette Einstieg (inkl. aller Gesten-Optionen, Events und dem Schreiben eigener Gesten) steht in **[API.md](API.md)**. Minimal-Beispiel:
+
+```js
+import { GestureLibrary, ThumbsUpGesture, PeaceGesture } from './lib/index.js';
+
+const lib = new GestureLibrary({ exclusive: true });
+lib.register(new ThumbsUpGesture({ holdMs: 250 }));
+lib.register(new PeaceGesture({ holdMs: 400 }));
+
+lib.addEventListener('gesturestart', (e) => {
+  console.log(`${e.detail.gesture} gestartet`);
+});
+
+// Im MediaPipe-Callback:
+function onResults(handResults) {
+  if (handResults.landmarks.length > 0) {
+    lib.update(handResults.landmarks, { timestamp: performance.now() });
+  } else {
+    lib.resetAll();
+  }
+}
+```
+
+## Projektstruktur
+
+```
+wt-beiboot-2026-Dongxin/
+├── README.md                       ← Projektübersicht & Schnellstart
+├── API.md                          ← Komplette Library-Referenz
+├── PROJECT.md                      ← Projektkontext & Zielsetzung
+├── CONTRIBUTING.md                 ← Guide für Beiträge
+├── LICENSE                         ← MIT-Lizenz
+├── THIRD_PARTY_LICENSES.md         ← Lizenzen der CDN-Komponenten
+├── package.json                    ← Test-/Lint-Skripte (keine Runtime-Dependencies)
+├── eslint.config.js                ← ESLint-Konfiguration (Flat Config)
+├── .github/workflows/deploy.yml    ← CI (lint/check/test) + GitHub-Pages-Deploy
+├── docs/                           ← ADRs & Prozess-Dokumentation (issue1–5)
+├── test/                           ← 51 Unit-Tests (node:test)
+└── src/                            ← Startseite, Library & Anwendungen
+    ├── index.html                  ← Startseite (verlinkt alle Anwendungen)
+    ├── lib/                        ← Die Library
+    │   ├── index.js                ← Haupt-Export
+    │   ├── GestureLibrary.js       ← Registry & Engine
+    │   ├── BaseGesture.js          ← Basisklasse
+    │   ├── gestures/
+    │   │   ├── ThumbsUpGesture.js        ← Issue #2: Start (Nah)
+    │   │   ├── ThumbsDownGesture.js      ← Issue #3: Stop (Nah)
+    │   │   ├── PinchGesture.js           ← Issue #2: Zoom-out (Nah)
+    │   │   ├── PeaceGesture.js           ← Issue #3: System aufwecken
+    │   │   ├── OpenHandStableGesture.js  ← Issue #2: Start (Fern)
+    │   │   └── TwoHandZoomGesture.js     ← Issue #2: Zoom-out (Fern)
+    │   └── utils/
+    │       └── landmarks.js        ← Konstanten & Hilfsfunktionen
+    ├── demo/                       ← Tracking-Demo (Entwicklungs-Werkbank)
+    ├── presentation/               ← Präsentations-App (Issue #4)
+    └── synth/                      ← Synthesizer-App (Issue #5)
+```
 
 ## Tests & Lint
 
@@ -69,283 +144,11 @@ Die Tests decken pro Geste Positiv-, Negativ- und Grenzfälle ab. Der Pinch-Jitt
 
 ## Deployment (GitHub Pages)
 
-Die Demo wird über GitHub Actions auf GitHub Pages veröffentlicht:
+Die Anwendungen werden über GitHub Actions auf GitHub Pages veröffentlicht:
 
-- **Public URL:** `https://xin667.github.io/wt-beiboot-2026-Dongxin/` (Demo unter `/demo/`)
+- **Public URL:** `https://xin667.github.io/wt-beiboot-2026-Dongxin/` (Startseite; Anwendungen unter `/demo/`, `/presentation/`, `/synth/`)
 - **Workflow:** `.github/workflows/deploy.yml` – bei Push auf `main` laufen `npm ci` + `npm run lint` + `npm run check` + `npm test` (jeder Schritt ist ein Deploy-Gate), danach wird `src/` als Pages-Artefakt veröffentlicht (relative `../lib/`-Imports bleiben dadurch intakt).
 - **Einmalige Voraussetzung:** in den Repo-Settings **Settings → Pages → Source: GitHub Actions** wählen.
-
-## Video
-
-> ⏳ Platzhalter – Link zur Video-Demo folgt nach dem Upload.
-
-## Einführung in die Library
-
-```js
-import {
-  GestureLibrary,
-  ThumbsUpGesture,
-  PinchGesture,
-  PeaceGesture,
-} from './lib/index.js';
-
-// 1. Library instanziieren (exclusive: Registrierungsreihenfolge = Priorität)
-const lib = new GestureLibrary({ exclusive: true });
-
-// 2. Gesten registrieren – Reihenfolge bestimmt Priorität!
-lib.register(new ThumbsUpGesture({ holdMs: 250 }));
-lib.register(new PinchGesture({ threshold: 0.04 }));
-lib.register(new PeaceGesture({ holdMs: 400 }));
-
-// 3. Auf erkannte Gesten reagieren
-lib.onGesture((name, result) => {
-  console.log(`${name} erkannt`, result.data);
-});
-
-// 4. Im MediaPipe-Callback aufrufen
-function onResults(handResults) {
-  if (handResults.landmarks.length > 0) {
-    lib.update(handResults.landmarks, { timestamp: performance.now() });
-  } else {
-    lib.resetAll();
-  }
-}
-```
-
-## Öffentliche vs. interne API
-
-**Öffentlich** (stabil, dokumentiert, für Nutzer der Library):
-- `GestureLibrary` – Instanziierung, `register()`, `unregister()`, `getRegisteredGestures()`, `getGesture()`, `update()`, `getActiveGestures()`, `getLastResult()`, `resetAll()`, `dispose()`
-- `GestureLibrary` erbt von `EventTarget` (siehe ADR 0006): `addEventListener()`/`removeEventListener()` mit den Events `gesture`/`gesturestart`/`gestureend` (Details unten). `onGesture()`/`onChange()` bleiben als Convenience-Wrapper erhalten.
-- `BaseGesture` – Basisklasse zum Erweitern für eigene Gesten
-- Alle eingebauten Gesten (`ThumbsUpGesture`, `PinchGesture`, etc.) – Konstruktor-Optionen
-- Utilities aus `utils/landmarks.js` – `LM`, `distance2D`, `isFingerCurled`, `isFingerExtended`
-
-**Intern** (Implementierungsdetails, `_`-Präfix):
-- `_gestures`, `_activeStart`, `_emitChanges()` etc.
-- `BaseGesture._stabilize()` – gemeinsame Halte-Stabilisierung (ADR 0007)
-- Routing-Logik in `update()` (handCount-Weiche, exclusive-Auswertung)
-- Zustandsvariablen einzelner Gesten (`_lastWristPos`, `_stableStart`, `_lastDist`)
-
-Eigenschaften und Methoden mit `_`-Präfix können sich ohne Vorwarnung ändern und sollten von außen nicht aufgerufen werden.
-
----
-
-## GestureLibrary: API-Referenz
-
-### `new GestureLibrary(options?)
-
-Erstellt eine neue Library-Instanz ohne registrierte Gesten.
-
-| Option | Default | Beschreibung |
-|---|---|---|
-| `exclusive` | `true` | Wenn true: Pro Frame wird nur die ERSTE erkannte Geste gemeldet. Registrierungsreihenfolge = Priorität; wenn false: alle Gesten werden unabhängig ausgewertet. |
-
-Zusätzlich wird automatisch nach Handanzahl getrennt: Bei 1 Hand werden nur Einhand-Gesten geprüft, bei 2 Händen nur Zweihand-Gesten.
-
-### Methode
-Folgende Methoden wurden implementiert:
-| Methode | Beschreibung |
-|---|---|
-| `register(gesture)` | Geste registrieren. Reihenfolge = Priorität. Chaining möglich. |
-| `unregister(name)` | Geste entfernen (`boolean`). |
-| `getRegisteredGestures()` | Namen aller registrierten Gesten (`string[]`). |
-| `getGesture(name)` | Registrierte Gesten-Instanz (`BaseGesture\|undefined`). |
-| `update(landmarks, meta?)` | Alle Gesten auswerten. `landmarks` = `handResults.landmarks` von MediaPipe. |
-| `getActiveGestures()` | Namen der aktuell erkannten Gesten (`string[]`). |
-| `getLastResult(name)` | Letztes Ergebnis einer Geste (`{detected, confidence, data}`). |
-| `onGesture(callback)` | Convenience-Wrapper um das `'gesture'`-Event. Gibt Unsubscribe-Funktion zurück. |
-| `onChange(callback)` | Convenience-Wrapper um `'gesturestart'`/`'gestureend'` (`{type: 'start'\|'end', gesture}`). |
-| `resetAll()` | Alle Gesten zurücksetzen (wenn keine Hand erkannt wird). |
-| `dispose()` | Alle Gesten entfernen. |
-
-### Events (EventTarget)
-
-`GestureLibrary` erbt von `EventTarget` (seit ADR 0006). Ereignisse lassen sich wie bei jedem nativen DOM-Objekt mit `addEventListener()` abonnieren:
-
-| Event | `detail` | Feuert |
-|---|---|---|
-| `gesture` | `{gesture: string, result: object}` | jeden Frame bei Erkennung (entspricht `onGesture`) |
-| `gesturestart` | `{gesture: string, result: object}` | beim Übergang zu erkannt (entspricht `onChange({type:'start'})`) |
-| `gestureend` | `{gesture: string}` | beim Übergang zu nicht mehr erkannt (entspricht `onChange({type:'end'})`) |
-
-```js
-lib.addEventListener('gesturestart', (e) => {
-  console.log(`${e.detail.gesture} gestartet`, e.detail.result);
-});
-```
-
-`onGesture()`/`onChange()` bleiben als abwärtskompatible Convenience-Wrapper erhalten (intern implementiert über `addEventListener`).
-
----
-
-## Eingebaute Gesten
-
-### ThumbsUpGesture
-
-Daumen hoch – Start (Nah). Aus Issue #2.
-
-```js
-new ThumbsUpGesture({ holdMs: 250 })
-```
-
-| Option | Default | Beschreibung |
-|---|---|---|
-| `holdMs` | `250` | Mindest-Haltedauer |
-
-Erkennung: Daumenspitze über Zeigefingerbasis (`hand[4].y < hand[5].y`), alle anderen Finger eingeklappt.
-
-### ThumbsDownGesture
-
-Daumen runter – Stop (Nah). Neu in Issue #3.
-
-```js
-new ThumbsDownGesture({ holdMs: 250 })
-```
-
-| Option | Default | Beschreibung |
-|---|---|---|
-| `holdMs` | `250` | Mindest-Haltedauer |
-
-Erkennung: Daumenspitze ist der tiefste Punkt der Hand, unter allen anderen Fingerspitzen.
-
-### PinchGesture
-
-Daumen + Zeigefinger zusammen – Zoom-out (Nah). Aus Issue #2.
-
-```js
-new PinchGesture({ threshold: 0.04 })
-```
-
-| Option | Default | Beschreibung |
-|---|---|---|
-| `threshold` | `0.04` | Max. Distanz LM4 ↔ LM8 (aus ADR 0003) |
-| `holdMs` | `150` | Mindest-Haltedauer unter der Schwelle (ADR 0007) |
-
-### PeaceGesture
-
-V-Geste / Peace-Zeichen – System aufwecken. Neu in Issue #3.
-
-```js
-new PeaceGesture({ holdMs: 400 })
-```
-
-| Option | Default | Beschreibung |
-|---|---|---|
-| `holdMs` | `400` | Mindest-Haltedauer |
-
-Erkennung: Zeige- und Mittelfinger gestreckt, Ring- und kleiner Finger eingeklappt.
-
-### OpenHandStableGesture
-
-Hand offen und stabil gehalten – Start (Fern). Aus Issue #2.
-
-```js
-new OpenHandStableGesture({ holdMs: 1500, maxMovement: 0.015 })
-```
-
-| Option | Default | Beschreibung |
-|---|---|---|
-| `holdMs` | `1500` | Mindest-Haltedauer |
-| `maxMovement` | `0.015` | Max. Handgelenkbewegung pro Frame |
-| `minThumbIndexDistance` | `0.05` | Min. Abstand Daumen ↔ Zeigefingerspitze – verhindert, dass eine langsame Pinch-Bewegung als „offene Hand" erkannt wird |
-
-### TwoHandZoomGesture
-
-Beide Hände bewegen sich aufeinander zu – Zoom-out (Fern). Aus Issue #2. `handCount === 2`.
-
-```js
-new TwoHandZoomGesture({ minDelta: 0.01, minDistance: 0.2, holdMs: 400 })
-```
-
-| Option | Default | Beschreibung |
-|---|---|---|
-| `minDelta` | `0.01` | Mindest-Annäherung pro Frame |
-| `minDistance` | `0.2` | Mindestabstand beider Hände |
-| `holdMs` | `400` | Überbrückt einzelne Rausch-Frames |
-
----
-
-## Eigene Geste schreiben
-
-```js
-import { BaseGesture } from './lib/BaseGesture.js';
-import { LM, isFingerCurled } from './lib/utils/landmarks.js';
-
-export class FistGesture extends BaseGesture {
-  get name() { return 'fist'; }
-  get description() { return 'Geballte Faust – Stop im Fernbereich.'; }
-
-  detect(hand, meta) {
-    const allCurled =
-      isFingerCurled(hand, LM.INDEX_TIP,  LM.INDEX_MCP)  &&
-      isFingerCurled(hand, LM.MIDDLE_TIP, LM.MIDDLE_MCP) &&
-      isFingerCurled(hand, LM.RING_TIP,   LM.RING_MCP)   &&
-      isFingerCurled(hand, LM.PINKY_TIP,  LM.PINKY_MCP)  &&
-      isFingerCurled(hand, LM.THUMB_TIP,  LM.THUMB_IP);
-
-    return { detected: allCurled, confidence: allCurled ? 0.85 : 0 };
-  }
-}
-
-// Registrieren – kein bestehender Code muss geändert werden:
-lib.register(new FistGesture());
-```
-
-### BaseGesture-Vertrag
-
-| Eigenschaft/Methode | Pflicht | Beschreibung |
-|---|---|---|
-| `name` (getter) | Ja | Eindeutiger String |
-| `description` (getter) | Ja | Kurze Beschreibung |
-| `handCount` (getter) | Optional | `1` (default) oder `2` |
-| `detect(landmarks, meta)` | Ja | Gibt `{detected, confidence, data?}` zurück |
-| `reset()` | Optional | Internen Zustand zurücksetzen |
-| `dispose()` | Optional | Ressourcen aufräumen |
-
-### Verfügbare Utilities (`utils/landmarks.js`)
-
-| Export | Beschreibung |
-|---|---|
-| `LM` | Landmark-Indizes (WRIST, THUMB_TIP, INDEX_TIP, …) |
-| `FINGER_TIPS` | `[4, 8, 12, 16, 20]` |
-| `FINGER_MCPS` | `[2, 5, 9, 13, 17]` |
-| `distance2D(a, b)` | 2D-Distanz (`Math.hypot`) |
-| `isFingerCurled(hand, tipIdx, mcpIdx)` | `tip.y > mcp.y` |
-| `isFingerExtended(hand, tipIdx, mcpIdx)` | `tip.y < mcp.y` |
-
----
-
-## Projektstruktur
-
-```
-src/
-├── lib/                              ← Die Library
-│   ├── index.js                      ← Haupt-Export
-│   ├── GestureLibrary.js             ← Registry & Engine
-│   ├── BaseGesture.js                ← Basisklasse
-│   ├── gestures/
-│   │   ├── ThumbsUpGesture.js        ← Issue #2: Start (Nah)
-│   │   ├── ThumbsDownGesture.js      ← Issue #3: Stop (Nah)
-│   │   ├── PinchGesture.js           ← Issue #2: Zoom-out (Nah)
-│   │   ├── PeaceGesture.js           ← Issue #3: System aufwecken
-│   │   ├── OpenHandStableGesture.js  ← Issue #2: Start (Fern)
-│   │   └── TwoHandZoomGesture.js     ← Issue #2: Zoom-out (Fern)
-│   └── utils/
-│       └── landmarks.js              ← Konstanten & Hilfsfunktionen
-├── demo/                             ← Demo-Anwendung
-│   ├── index.html
-│   └── app.js
-├── presentation/                     ← Issue #4: Präsentations-Demo (nur öffentliche API)
-│   ├── index.html
-│   ├── app.js
-│   └── slides.js
-├── synth/                            ← Issue #5: Gesten-Synthesizer (nur öffentliche API)
-│   ├── index.html
-│   ├── app.js
-│   └── audio.js
-```
-
 
 ## Branches
 
@@ -361,4 +164,4 @@ Die Process Documentation ist nach Issue dokumentiert in `/docs`
 
 ## Notes
 
-Die Library ist von der Demo-Anwendung getrennt und kann von Dritten genutzt werden, ohne den Quellcode lesen zu müssen.
+Die Library ist von den Anwendungen getrennt und kann von Dritten genutzt werden, ohne den Quellcode lesen zu müssen.
