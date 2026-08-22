@@ -11,6 +11,12 @@
 - **Lösung (Weg B):** Die duplizierte Logik ist als gemeinsame Methode `_stabilize()` in `BaseGesture` gebündelt. `PinchGesture` nutzt sie jetzt auch (Default `holdMs = 150`).
 - **Messung:** Der Jitter-Test zählt `gesturestart`-Flanken: bei Rauschen **4 → 0**, beim Halten **2 → 1**. Die anderen Gesten bleiben unverändert (51 Tests grün).
 
+## Bezug zum Akzeptanzkriterium (Weg-Entscheidung)
+
+Issue #5 verlangt eine begründete Wahl zwischen Weg A und Weg B. **Gewählt wurde Weg B** – die gemeinsame holdMs-Stabilisierung in `BaseGesture._stabilize()`. Weg A (nur Pinch lokal patchen) wurde verworfen, weil er die bereits dreifach duplizierte Timer-Logik an einen vierten Ort kopiert hätte (DRY) und die übrigen Gesten nicht mitnimmt. Die Wirkung von Weg A („Pinch flackert nicht mehr") wird von Weg B mit abgedeckt – belegt durch die Vorher/Nachher-Messung – ohne eine zweite Implementierung einzuführen.
+
+Die Synthesizer-Demo (`src/synth/`, ADR 0008) ist eine **planmäßig nicht vorgesehene Zusatz-Demo** und kein Teil der Weg-A-Lieferung: Die Wege-Entscheidung betrifft ausschließlich die Stabilisierungsmechanik der Library.
+
 ## Context and Problem Statement
 
 Beim Regressionstest der Issue-#4-Änderung flackerte die `PinchGesture` (vollständiges Log: `docs/issue4/friction-notes.md`, Abschnitt 2026-07-14). Bei durchgehend gehaltener Pinch-Geste erschienen im Event-Log mehrere `START`/`END`-Paare pro Sekunde:

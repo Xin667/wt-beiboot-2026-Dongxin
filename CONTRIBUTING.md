@@ -4,7 +4,7 @@ Danke für dein Interesse! Das ist ein Studienprojekt (Beiboot-Projekt, Modul *W
 
 ## Entwicklung
 
-- **Keine npm-Abhängigkeiten.** Die Library ist reines ES-Module-JavaScript. `npm` wird nur für `node --test` genutzt; es gibt daher bewusst **kein** Lockfile (KISS, siehe README).
+- **Runtime null npm-Abhängigkeiten.** Die Library ist reines ES-Module-JavaScript. `npm` wird nur für `node --test` und die Entwicklungswerkzeuge (ESLint als devDependency) genutzt; die devDependency-Versionen sind über das `package-lock.json` fixiert (siehe README).
 - **Node >= 18.13** zum Ausführen der Tests.
 
 ## Workflow
