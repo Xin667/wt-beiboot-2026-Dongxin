@@ -11,9 +11,9 @@
 | Nacharbeit: ESLint + Library-Integrationstests (49 Tests) + Grenzwert-Angleichung | 2h |
 | Nacharbeit: OpenHandStable vs. Pinch-Konflikt (minThumbIndexDistance) | 1.5h |
 | Synthesizer-Demo `src/synth/` (Looper, UI-Redesign, Stabilisierungen, Pinch-Entfernung) – Schätzung | 8.5h |
-| Video (Dreh & Upload) | 3h |
+| Video (Dreh & Upload) | 0.5h |
 | Zeittracking & Reflexion | 0.5h |
-| **Gesamt** | **26h** |
+| **Gesamt** | **23.5h** |
 
 ## Reflexion
 
