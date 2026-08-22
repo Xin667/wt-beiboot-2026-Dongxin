@@ -54,3 +54,19 @@ test('Pinch: Daten enthalten Distanz und Haltedauer', () => {
   assert.equal(typeof r.data.distance, 'number');
   assert.equal(typeof r.data.heldMs, 'number');
 });
+
+test('Pinch: Exit bewusst ohne Debounce – stabil gehalten, ein Rausch-Frame beendet sofort', () => {
+  // Dokumentierte Semantik (ADR 0007): Nur der EINTRITT ist durch holdMs
+  // stabilisiert, der Austritt reagiert sofort. Dieser Test fixiert das
+  // Verhalten, damit eine künftige Änderung bewusst passieren muss.
+  const g = new PinchGesture({ threshold: 0.04, holdMs: 150 });
+  const held = [0, 50, 100, 150].map((t) => g.detect(pinchHand(0.03), { timestamp: t }).detected);
+  assert.deepEqual(held, [false, false, false, true]); // ab 150 ms aktiv
+
+  // Ein einzelner Frame über der Schwelle beendet die Geste sofort …
+  assert.equal(g.detect(pinchHand(0.05), { timestamp: 200 }).detected, false);
+
+  // … und die nächste Erkennung braucht wieder die volle holdMs.
+  assert.equal(g.detect(pinchHand(0.03), { timestamp: 250 }).detected, false);
+  assert.equal(g.detect(pinchHand(0.03), { timestamp: 400 }).detected, true);
+});

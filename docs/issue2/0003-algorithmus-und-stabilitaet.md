@@ -39,3 +39,9 @@ Zusätzlich wurde eine feste Prioritätsreihenfolge eingeführt: Pinch → Thumb
 * Start (Fern) erkennt auch bei mittlerer Entfernung, da der z-Wert von MediaPipe zu stark verrauscht ist für eine zuverlässige Tiefenschwelle
 * Schwellenwerte sind auf normale Lichtverhältnisse und durchschnittliche Handgröße kalibriert – bei abweichenden Bedingungen kann die Erkennungsrate sinken
 * Werte sind direkt im Code eingebettet und nicht zur Laufzeit konfigurierbar
+
+---
+
+## Update (ADR 0004)
+
+Der letzte Negativpunkt („Werte sind direkt im Code eingebettet …") ist durch das Registry-Pattern aus ADR 0004 behoben: Seit Issue #3 sind die Schwellenwerte über Konstruktor-Optionen konfigurierbar, z.B. `new PinchGesture({ threshold: 0.04 })`. Der Originaltext bleibt unverändert (ADR-Konvention).
